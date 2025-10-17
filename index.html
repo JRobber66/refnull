@@ -28,7 +28,7 @@
   .emails{display:grid;gap:12px}
   .email{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px}
   .right{text-align:right} .hint{color:var(--muted);font-size:13px}
-  details{border-top:1px dashed var(--border);margin-top:8px;padding-top:8px}
+  details{border-top: 1px dashed var(--border);margin-top:8px;padding-top:8px}
   .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(122,162,255,.12);
         border:1px solid rgba(122,162,255,.25)}
 </style>
@@ -64,7 +64,7 @@
       </div>
       <div class="kv"><div>Status</div> <div class="mono" id="status">idle</div></div>
     </div>
-    <p class="hint" style="margin-top:6px">Keep this tab open to maintain the live stream. The backend enforces CORS for your origin.</p>
+    <p class="hint" style="margin-top:6px">Keep this tab open to maintain the live stream. Polling runs every 1s as a fallback.</p>
   </div>
 
   <div class="card">
@@ -87,7 +87,7 @@
   const copyEmailBtn = $("copyEmail"), mailtoLink = $("mailto");
   const statusEl = $("status"), emailsEl = $("emails"), countEl = $("count");
 
-  let es = null, currentAlias = null, msgCount = 0;
+  let es = null, currentAlias = null, msgCount = 0, pollTimer = null;
 
   const setStatus = (t) => statusEl.textContent = t;
   const fmtCount = (n) => countEl.textContent = `${n} message${n===1?"":"s"}`;
@@ -124,8 +124,30 @@
     }
   }
 
+  async function pollMessages() {
+    if (!currentAlias) return;
+    try {
+      const resp = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(currentAlias)}`);
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const arr = Array.isArray(data.messages) ? data.messages : [];
+      if (arr.length > msgCount) {
+        const newOnes = arr.slice(msgCount); // append-only growth
+        for (const raw of newOnes) {
+          const simplified = {
+            from: raw.From, to: raw.To, subject: raw.Subject,
+            text: raw.TextBody, html: raw.HtmlBody,
+            attachments: (raw.Attachments||[]).map(a => ({Name:a.Name, ContentType:a.ContentType, ContentLength:a.ContentLength}))
+          };
+          renderEmailCard({ data: JSON.stringify({ simplified, raw }) });
+        }
+      }
+    } catch (_) {}
+  }
+
   async function createSession() {
     if (es) { es.close(); es = null; }
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     emailsEl.innerHTML = ""; msgCount = 0; fmtCount(0); setStatus("creating…");
 
     const alias = aliasInput.value.trim();
@@ -145,16 +167,24 @@
     mailtoLink.href = `mailto:${encodeURIComponent(data.email)}`;
     setStatus("connecting…");
 
+    // SSE live stream
     es = new EventSource(`${API_BASE}/api/stream/${encodeURIComponent(currentAlias)}`);
     es.addEventListener("backlog", renderBacklog);
     es.addEventListener("email", renderEmailCard);
-    es.onopen   = () => setStatus("live");
-    es.onerror  = () => setStatus("disconnected");
+    es.onopen  = () => setStatus("live");
+    es.onerror = () => setStatus("disconnected");
+
+    // 1-second polling fallback
+    pollTimer = setInterval(pollMessages, 1000);
   }
 
-  makeBtn.addEventListener("click", createSession);
-  stopBtn.addEventListener("click", () => { if (es) es.close(); setStatus("stopped"); });
-  clearBtn.addEventListener("click", () => { emailsEl.innerHTML = ""; msgCount = 0; fmtCount(0); });
+  $("make").addEventListener("click", createSession);
+  $("stop").addEventListener("click", () => {
+    if (es) es.close(); es = null;
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    setStatus("stopped");
+  });
+  $("clear").addEventListener("click", () => { emailsEl.innerHTML = ""; msgCount = 0; fmtCount(0); });
 
   // Optional: auto-generate on load
   // createSession();
