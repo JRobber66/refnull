@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>NullRef — Alias & Inbox</title>
+<meta name="color-scheme" content="light dark" />
+<style>
+  :root {
+    --bg: #0b0c0f;
+    --card: #111318;
+    --text: #e9ecf1;
+    --muted: #9aa3b2;
+    --accent: #7aa2ff;
+    --border: #1e2230;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f7fb; --card: #ffffff; --text: #0b0c0f; --muted: #566074; --accent: #3759ff; --border: #e7eaf2;
+    }
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0; padding: 24px;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text); background: radial-gradient(1200px 800px at 10% 10%, #1b2030 0%, var(--bg) 45%);
+  }
+  .container { max-width: 980px; margin: 0 auto; }
+  h1 { margin: 0 0 10px; letter-spacing: .2px; font-weight: 700; }
+  .sub { color: var(--muted); margin: 0 0 18px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 16px; margin-bottom: 16px; box-shadow: 0 6px 20px rgba(0,0,0,.15);
+  }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
+  label { display: inline-block; margin-bottom: 6px; color: var(--muted); font-size: 14px; }
+  input, button, select {
+    padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border);
+    background: transparent; color: var(--text); outline: none; font-size: 15px;
+  }
+  input::placeholder { color: var(--muted); }
+  button {
+    background: var(--accent); color: white; border: 0; cursor: pointer; font-weight: 600;
+  }
+  button.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  code, pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: rgba(127,127,127,.08); padding: 2px 6px; border-radius: 8px;
+  }
+  .kv { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: center; }
+  .flex { display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
+  .muted { color: var(--muted); }
+  .emails { display: grid; gap: 12px; }
+  .email { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+  details { border-top: 1px dashed var(--border); margin-top: 8px; padding-top: 8px; }
+  .pill { display:inline-flex; align-items:center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: rgba(122,162,255,.12); border:1px solid rgba(122,162,255,.25); }
+  .right { text-align:right; }
+  .hint { font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>NullRef — Alias & Inbox</h1>
+    <p class="sub">Generate a realistic alias with an over-21 DOB and a catch-all email. Incoming mail for that alias streams live below.</p>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <label for="alias">Custom alias (optional)</label>
+          <input id="alias" placeholder="e.g., Jordan-Wright482" />
+        </div>
+        <div class="flex">
+          <button id="make">Generate alias + DOB</button>
+          <button id="stop" class="secondary">Stop stream</button>
+          <button id="clear" class="secondary">Clear</button>
+        </div>
+      </div>
+      <div style="margin-top:12px" class="grid2">
+        <div class="kv"><div>Alias</div><div class="mono" id="out-alias">—</div></div>
+        <div class="kv"><div>DOB</div><div class="mono" id="out-dob">—</div></div>
+        <div class="kv"><div>Email</div>
+          <div class="flex">
+            <span class="mono" id="out-email">—</span>
+            <button id="copyEmail" class="secondary">Copy</button>
+            <a id="mailto" class="pill mono" href="#" target="_blank" rel="noopener">mailto</a>
+          </div>
+        </div>
+        <div class="kv"><div>Status</div><div class="mono" id="status">idle</div></div>
+      </div>
+      <p class="hint" style="margin-top:10px">Send a message to the email above; it will appear live here. Keep this tab open to maintain the stream.</p>
+    </div>
+
+    <div class="card">
+      <div class="flex" style="justify-content:space-between">
+        <h3 style="margin:0">Incoming Emails</h3>
+        <div class="hint" id="count">0 messages</div>
+      </div>
+      <div id="emails" class="emails"></div>
+    </div>
+  </div>
+
+<script>
+  // ================== CONFIG ==================
+  // Point this to your backend (CORS must allow this origin).
+  const API_BASE = "https://nullrefback-production.up.railway.app";
+  // ============================================
+
+  const $ = (id) => document.getElementById(id);
+  const aliasInput = $("alias");
+  const makeBtn = $("make");
+  const stopBtn = $("stop");
+  const clearBtn = $("clear");
+  const outAlias = $("out-alias");
+  const outDob = $("out-dob");
+  const outEmail = $("out-email");
+  const copyEmailBtn = $("copyEmail");
+  const mailtoLink = $("mailto");
+  const statusEl = $("status");
+  const emailsEl = $("emails");
+  const countEl = $("count");
+
+  let es;           // EventSource
+  let currentAlias; // string
+  let msgCount = 0;
+
+  function setStatus(t) { statusEl.textContent = t; }
+  function sanitizeHTML(str) {
+    return (str || "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function fmtCount(n) { countEl.textContent = `${n} message${n===1?'':'s'}`; }
+
+  function renderEmailCard(payload) {
+    const d = JSON.parse(payload.data);
+    const s = d.simplified || {};
+    const card = document.createElement("div");
+    card.className = "email";
+
+    card.innerHTML = `
+      <div class="grid2">
+        <div><b>From:</b> <span class="mono">${sanitizeHTML(s.from || "")}</span></div>
+        <div class="right"><b>To:</b> <span class="mono">${sanitizeHTML(s.to || "")}</span></div>
+      </div>
+      <div style="margin-top:6px"><b>Subject:</b> <span class="mono">${sanitizeHTML(s.subject || "")}</span></div>
+      ${s.text ? `<pre class="mono" style="margin-top:10px;white-space:pre-wrap;">${sanitizeHTML(s.text)}</pre>` : ""}
+      ${s.html ? `<details style="margin-top:6px;"><summary>HTML preview (sanitized)</summary><div class="mono" style="white-space:pre-wrap;">${sanitizeHTML(s.html)}</div></details>` : ""}
+      <details style="margin-top:8px;">
+        <summary>Raw JSON</summary>
+        <pre class="mono" style="white-space:pre-wrap;">${sanitizeHTML(JSON.stringify(d.raw || {}, null, 2))}</pre>
+      </details>
+    `;
+    emailsEl.prepend(card);
+    msgCount += 1; fmtCount(msgCount);
+  }
+
+  function renderBacklog(payload) {
+    const arr = JSON.parse(payload.data) || [];
+    arr.forEach(raw => {
+      const simplified = {
+        from: raw.From, to: raw.To, subject: raw.Subject,
+        text: raw.TextBody, html: raw.HtmlBody,
+        attachments: (raw.Attachments||[]).map(a => ({Name:a.Name, ContentType:a.ContentType, ContentLength:a.ContentLength}))
+      };
+      renderEmailCard({ data: JSON.stringify({ simplified, raw }) });
+    });
+  }
+
+  async function createSession() {
+    if (es) { es.close(); es = undefined; }
+    emailsEl.innerHTML = ""; msgCount = 0; fmtCount(0);
+    setStatus("creating session…");
+
+    const alias = aliasInput.value.trim();
+    const resp = await fetch(`${API_BASE}/api/session`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(alias ? { alias } : {})
+    });
+
+    if (!resp.ok) {
+      setStatus("error creating session");
+      return;
+    }
+    const data = await resp.json();
+    currentAlias = data.alias;
+
+    outAlias.textContent = data.alias;
+    outDob.textContent = `${data.dobPretty}  (${data.dobISO})`;
+    outEmail.textContent = data.email;
+    copyEmailBtn.onclick = () => navigator.clipboard.writeText(data.email);
+    mailtoLink.href = `mailto:${encodeURIComponent(data.email)}`;
+    setStatus("connecting…");
+
+    // Open SSE stream
+    es = new EventSource(`${API_BASE}/api/stream/${encodeURIComponent(currentAlias)}`);
+    es.addEventListener("backlog", renderBacklog);
+    es.addEventListener("email", renderEmailCard);
+    es.onopen = () => setStatus("live");
+    es.onerror = () => setStatus("disconnected (retry on next generate)");
+  }
+
+  makeBtn.addEventListener("click", createSession);
+  stopBtn.addEventListener("click", () => { if (es) es.close(); setStatus("stopped"); });
+  clearBtn.addEventListener("click", () => { emailsEl.innerHTML = ""; msgCount = 0; fmtCount(0); });
+
+  // Optional: auto-create on load
+  // createSession();
+</script>
+</body>
+</html>
