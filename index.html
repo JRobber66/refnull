@@ -2,114 +2,143 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>RefNull — Alias & Inbox</title>
 <meta name="color-scheme" content="light dark" />
 <style>
-  :root { --bg:#0c0f14; --card:#121722; --text:#e8ecf4; --muted:#9aa3b2; --accent:#7aa2ff; --border:#222838; }
-  @media (prefers-color-scheme: light) {
-    :root { --bg:#f6f7fb; --card:#ffffff; --text:#0b0c0f; --muted:#566074; --accent:#3759ff; --border:#e7eaf2; }
+  :root {
+    --bg: #0e1116; --text: #e9edf3; --muted: #9aa3b2; --card: #151a22; --border: #232a36; --accent: #66a3ff; --ok: #19c37d;
   }
-  html,body{height:100%}
-  body{margin:0;padding:24px;background:radial-gradient(1200px 800px at 10% 10%,#1a2134 0%,var(--bg) 45%);color:var(--text);
-       font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-  .wrap{max-width:980px;margin:0 auto}
-  h1{margin:0 0 8px} .sub{margin:0 0 18px;color:var(--muted)}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin:16px 0;box-shadow:0 6px 20px rgba(0,0,0,.15)}
-  .row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end}
-  label{display:inline-block;margin-bottom:6px;color:var(--muted);font-size:14px}
-  input,button{padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:15px}
-  button{background:var(--accent);color:#fff;border:0;cursor:pointer;font-weight:600}
-  button.secondary{background:transparent;color:var(--text);border:1px solid var(--border)}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .kv{display:grid;grid-template-columns:130px 1fr;gap:12px;align-items:center}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.95rem}
-  code,pre{background:rgba(127,127,127,.08);padding:2px 6px;border-radius:8px}
-  .emails{display:grid;gap:12px}
-  .email{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px}
-  .right{text-align:right} .hint{color:var(--muted);font-size:13px}
-  details{border-top: 1px dashed var(--border);margin-top:8px;padding-top:8px}
-  .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(122,162,255,.12);
-        border:1px solid rgba(122,162,255,.25)}
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f6f7fb; --text:#0b0c0f; --muted:#5d6b82; --card:#ffffff; --border:#e6eaf2; --accent:#3759ff; --ok:#12a66a; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; }
+  h1 { margin: 0 0 8px; font-size: 22px; }
+  p.sub { margin: 0 0 16px; color: var(--muted); }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px; margin: 16px 0;
+  }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  button, .btn {
+    appearance: none; border: 1px solid var(--border); background: var(--card); color: var(--text);
+    padding: 10px 14px; border-radius: 10px; font-weight: 600; cursor: pointer;
+  }
+  button.primary { background: var(--accent); color: #fff; border: 0; }
+  button.ok { background: var(--ok); color: #fff; border: 0; }
+  button[disabled] { opacity: .6; cursor: not-allowed; }
+  .grid { display: grid; grid-template-columns: 140px 1fr; gap: 10px; align-items: center; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  code, pre { background: rgba(127,127,127,.08); padding: 2px 6px; border-radius: 8px; }
+  .emails { display: grid; gap: 10px; }
+  .email { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .muted { color: var(--muted); }
+  .status { font-size: 13px; color: var(--muted); }
+  details { border-top: 1px dashed var(--border); margin-top: 6px; padding-top: 6px; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>RefNull — Alias & Inbox</h1>
-  <p class="sub">Generate a realistic alias with an over-21 DOB and a catch-all email. Emails to that address stream in live.</p>
+  <p class="sub">Step 1: generate a name & DOB. Step 2: generate the email and start the live inbox.</p>
 
+  <!-- Step 1: Generate Alias + DOB (email hidden) -->
   <div class="card">
     <div class="row">
-      <div>
-        <label for="alias">Custom alias (optional)</label>
-        <input id="alias" placeholder="e.g., Jordan-Wright482" autocomplete="off" />
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button id="make">Generate alias + DOB</button>
-        <button id="stop" class="secondary" type="button">Stop stream</button>
-        <button id="clear" class="secondary" type="button">Clear</button>
-      </div>
+      <button id="btnName" class="primary">Generate Name & DOB</button>
+      <span id="status1" class="status">idle</span>
     </div>
-
-    <div style="margin-top:12px" class="grid2">
-      <div class="kv"><div>Alias</div> <div class="mono" id="out-alias">—</div></div>
-      <div class="kv"><div>DOB</div>   <div class="mono" id="out-dob">—</div></div>
-      <div class="kv">
-        <div>Email</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <span class="mono" id="out-email">—</span>
-          <button id="copyEmail" class="secondary" type="button">Copy</button>
-          <a id="mailto" class="pill mono" href="#" target="_blank" rel="noopener">mailto</a>
-        </div>
-      </div>
-      <div class="kv"><div>Status</div> <div class="mono" id="status">idle</div></div>
+    <div style="margin-top:10px" class="grid">
+      <div>Alias</div><div class="mono" id="aliasOut">—</div>
+      <div>DOB</div><div class="mono" id="dobOut">—</div>
     </div>
-    <p class="hint" style="margin-top:6px">Keep this tab open to maintain the live stream. Polling runs every 1s as a fallback.</p>
   </div>
 
+  <!-- Step 2: Generate Email & Start Inbox -->
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <h3 style="margin:0">Incoming Emails</h3>
-      <div class="hint" id="count">0 messages</div>
+    <div class="row">
+      <button id="btnEmail" class="primary" disabled>Generate Email & Start Inbox</button>
+      <button id="btnStop" class="">Stop</button>
+      <button id="btnClear" class="">Clear</button>
+      <span id="status2" class="status">waiting for name…</span>
+    </div>
+
+    <div style="margin-top:10px" class="grid">
+      <div>Email</div>
+      <div class="row" style="gap:8px">
+        <span class="mono" id="emailOut">—</span>
+        <button id="btnCopy" class="btn" disabled>Copy</button>
+        <a id="mailto" class="btn" href="#" target="_blank" rel="noopener" aria-label="Open mail client">mailto</a>
+      </div>
+      <div>Status</div><div class="mono" id="liveStatus">idle</div>
+      <div>Total</div><div class="mono" id="msgCount">0</div>
+    </div>
+  </div>
+
+  <!-- Inbox -->
+  <div class="card">
+    <div class="row" style="justify-content: space-between;">
+      <strong>Incoming Emails</strong>
+      <span class="status">Newest at top</span>
     </div>
     <div id="emails" class="emails"></div>
   </div>
 </div>
 
 <script>
-  // ================= CONFIG =================
-  const API_BASE = "https://nullrefback-production.up.railway.app"; // <- your backend
-  // ==========================================
+  // ========= CONFIG =========
+  const API_BASE = "https://nullrefback-production.up.railway.app"; // your backend
+  // =========================
 
   const $ = (id) => document.getElementById(id);
-  const aliasInput = $("alias"), makeBtn = $("make"), stopBtn = $("stop"), clearBtn = $("clear");
-  const outAlias = $("out-alias"), outDob = $("out-dob"), outEmail = $("out-email");
-  const copyEmailBtn = $("copyEmail"), mailtoLink = $("mailto");
-  const statusEl = $("status"), emailsEl = $("emails"), countEl = $("count");
+  const btnName = $("btnName");
+  const btnEmail = $("btnEmail");
+  const btnStop = $("btnStop");
+  const btnClear = $("btnClear");
+  const btnCopy = $("btnCopy");
+  const aliasOut = $("aliasOut");
+  const dobOut = $("dobOut");
+  const emailOut = $("emailOut");
+  const mailtoLink = $("mailto");
+  const liveStatus = $("liveStatus");
+  const status1 = $("status1");
+  const status2 = $("status2");
+  const emailsEl = $("emails");
+  const msgCountEl = $("msgCount");
 
-  let es = null, currentAlias = null, msgCount = 0, pollTimer = null;
+  let current = {
+    alias: null,
+    dobISO: null,
+    dobPretty: null,
+    email: null
+  };
+  let es = null, pollTimer = null, renderedCount = 0, sessionData = null;
 
-  const setStatus = (t) => statusEl.textContent = t;
-  const fmtCount = (n) => countEl.textContent = `${n} message${n===1?"":"s"}`;
-  const sanitize = (s) => (s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const setLive = (t) => liveStatus.textContent = t;
+  const setCount = (n) => msgCountEl.textContent = n;
+  const sanitize = (s) => (s||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+  // Render helpers
   function renderEmailCard(payload) {
     const d = JSON.parse(payload.data);
     const s = d.simplified || {};
     const el = document.createElement("div");
     el.className = "email";
     el.innerHTML = `
-      <div class="grid2">
-        <div><b>From:</b> <span class="mono">${sanitize(s.from||"")}</span></div>
-        <div class="right"><b>To:</b> <span class="mono">${sanitize(s.to||"")}</span></div>
-      </div>
+      <div><b>From:</b> <span class="mono">${sanitize(s.from||"")}</span></div>
+      <div><b>To:</b>   <span class="mono">${sanitize(s.to||"")}</span></div>
       <div style="margin-top:4px"><b>Subject:</b> <span class="mono">${sanitize(s.subject||"")}</span></div>
-      ${s.text ? `<pre class="mono" style="margin-top:8px;white-space:pre-wrap;">${sanitize(s.text)}</pre>` : ""}
+      ${s.text ? `<pre class="mono" style="margin-top:6px;white-space:pre-wrap;">${sanitize(s.text)}</pre>` : ""}
       ${s.html ? `<details style="margin-top:6px;"><summary>HTML (sanitized)</summary><div class="mono" style="white-space:pre-wrap;">${sanitize(s.html)}</div></details>` : ""}
-      <details style="margin-top:8px;"><summary>Raw JSON</summary><pre class="mono" style="white-space:pre-wrap;">${sanitize(JSON.stringify(d.raw||{}, null, 2))}</pre></details>
+      <details style="margin-top:6px;"><summary>Raw JSON</summary><pre class="mono" style="white-space:pre-wrap;">${sanitize(JSON.stringify(d.raw||{}, null, 2))}</pre></details>
     `;
     emailsEl.prepend(el);
-    msgCount += 1; fmtCount(msgCount);
+    renderedCount += 1; setCount(renderedCount);
   }
 
   function renderBacklog(payload) {
@@ -124,15 +153,16 @@
     }
   }
 
+  // Polling fallback (1s)
   async function pollMessages() {
-    if (!currentAlias) return;
+    if (!current.alias) return;
     try {
-      const resp = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(currentAlias)}`);
+      const resp = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(current.alias)}`);
       if (!resp.ok) return;
       const data = await resp.json();
       const arr = Array.isArray(data.messages) ? data.messages : [];
-      if (arr.length > msgCount) {
-        const newOnes = arr.slice(msgCount); // append-only growth
+      if (arr.length > renderedCount) {
+        const newOnes = arr.slice(renderedCount);
         for (const raw of newOnes) {
           const simplified = {
             from: raw.From, to: raw.To, subject: raw.Subject,
@@ -145,49 +175,100 @@
     } catch (_) {}
   }
 
-  async function createSession() {
-    if (es) { es.close(); es = null; }
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-    emailsEl.innerHTML = ""; msgCount = 0; fmtCount(0); setStatus("creating…");
+  // Step 1: Generate Name & DOB (email hidden)
+  btnName.onclick = async () => {
+    // We’ll use the backend session to get a consistent alias + DOB, but hide the email for now.
+    status1.textContent = "generating…";
+    btnName.disabled = true;
+    try {
+      const resp = await fetch(`${API_BASE}/api/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}) // no alias => backend picks a human-style one
+      });
+      if (!resp.ok) throw new Error("create session failed");
+      sessionData = await resp.json(); // { alias, dobISO, dobPretty, email }
+      // Store alias & DOB only for now:
+      current.alias = sessionData.alias;
+      current.dobISO = sessionData.dobISO;
+      current.dobPretty = sessionData.dobPretty;
 
-    const alias = aliasInput.value.trim();
-    const resp = await fetch(`${API_BASE}/api/session`, {
-      method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(alias ? { alias } : {})
-    });
-    if (!resp.ok) { setStatus("error creating session"); return; }
+      aliasOut.textContent = current.alias;
+      dobOut.textContent = `${current.dobPretty} (${current.dobISO})`;
 
-    const data = await resp.json();
-    currentAlias = data.alias;
+      status1.textContent = "ready";
+      status2.textContent = "click 'Generate Email & Start Inbox'";
+      btnEmail.disabled = false;
+    } catch (e) {
+      status1.textContent = "error";
+      btnName.disabled = false;
+    }
+  };
 
-    outAlias.textContent = data.alias;
-    outDob.textContent   = `${data.dobPretty} (${data.dobISO})`;
-    outEmail.textContent = data.email;
-    copyEmailBtn.onclick = () => navigator.clipboard.writeText(data.email);
-    mailtoLink.href = `mailto:${encodeURIComponent(data.email)}`;
-    setStatus("connecting…");
+  // Step 2: Generate Email & Start Inbox (reveal email, start SSE + polling)
+  btnEmail.onclick = () => {
+    if (!sessionData) return;
+    btnEmail.disabled = true;
 
-    // SSE live stream
-    es = new EventSource(`${API_BASE}/api/stream/${encodeURIComponent(currentAlias)}`);
+    // Reveal the email now:
+    current.email = sessionData.email;
+    emailOut.textContent = current.email;
+    btnCopy.disabled = false;
+    mailtoLink.href = `mailto:${encodeURIComponent(current.email)}`;
+
+    // Reset inbox list and counters
+    emailsEl.innerHTML = "";
+    renderedCount = 0; setCount(0);
+
+    // Start SSE
+    setLive("connecting…");
+    es = new EventSource(`${API_BASE}/api/stream/${encodeURIComponent(current.alias)}`);
     es.addEventListener("backlog", renderBacklog);
     es.addEventListener("email", renderEmailCard);
-    es.onopen  = () => setStatus("live");
-    es.onerror = () => setStatus("disconnected");
+    es.onopen  = () => setLive("live");
+    es.onerror = () => setLive("disconnected");
 
-    // 1-second polling fallback
+    // Start 1s polling fallback
+    if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(pollMessages, 1000);
-  }
 
-  $("make").addEventListener("click", createSession);
-  $("stop").addEventListener("click", () => {
-    if (es) es.close(); es = null;
+    status2.textContent = "inbox running";
+  };
+
+  // Stop & Clear
+  btnStop.onclick = () => {
+    if (es) es.close();
+    es = null;
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-    setStatus("stopped");
-  });
-  $("clear").addEventListener("click", () => { emailsEl.innerHTML = ""; msgCount = 0; fmtCount(0); });
+    setLive("stopped");
+  };
+  btnClear.onclick = () => {
+    emailsEl.innerHTML = "";
+    renderedCount = 0; setCount(0);
+  };
 
-  // Optional: auto-generate on load
-  // createSession();
+  // Responsive Copy button
+  btnCopy.onclick = async () => {
+    if (!current.email) return;
+    const prev = btnCopy.textContent;
+    btnCopy.disabled = true;
+    try {
+      await navigator.clipboard.writeText(current.email);
+      btnCopy.textContent = "Copied!";
+      btnCopy.classList.add("ok");
+      setTimeout(() => {
+        btnCopy.textContent = "Copy";
+        btnCopy.classList.remove("ok");
+        btnCopy.disabled = false;
+      }, 900);
+    } catch {
+      btnCopy.textContent = "Copy failed";
+      setTimeout(() => {
+        btnCopy.textContent = "Copy";
+        btnCopy.disabled = false;
+      }, 1200);
+    }
+  };
 </script>
 </body>
 </html>
