@@ -6,46 +6,41 @@
   <title>refnull Mail</title>
   <style>
     :root {
-      --bg: #0b0d12; --panel: #11141b; --ink: #e8ebf1; --muted:#8b93a7; --line:#1f2430;
+      --bg:#0b0d12; --panel:#11141b; --ink:#e8ebf1; --muted:#8b93a7; --line:#1f2430;
       --accent:#3a7afe; --accent-2:#7aa2ff; --danger:#e25555; --ok:#2bb673; --warn:#e6b800;
     }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 ui-sans-serif, -apple-system, Segoe UI, Roboto, Inter, Arial, "Noto Sans", "Helvetica Neue", sans-serif; }
-    
-    .shell { max-width: 980px; margin: 48px auto; padding: 0 20px; }
-    header { display:flex; align-items:center; gap:16px; margin-bottom: 18px; }
-    header .title { font-size: 22px; font-weight: 650; letter-spacing:.3px; }
-    header .sub { color: var(--muted); font-size: 12px; }
-    header .status { margin-left:auto; font-size:12px; color: var(--muted); display:flex; align-items:center; gap:8px; }
-    .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
-    .dot.ok{ background: var(--ok); } .dot.err{ background: var(--danger); } .dot.warn{ background: var(--warn); }
-
-    .card { background: var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow: 0 8px 24px rgba(0,0,0,.25); margin-bottom:16px; }
-    h3 { margin:0 0 10px; font-size:16px; letter-spacing:.2px; }
-    .row { display:flex; gap:10px; flex-wrap:wrap; }
-    input, textarea, button {
-      font: inherit; color: var(--ink); background:#0e1320; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
-    }
-    input, textarea { flex:1; min-width: 220px; }
-    input::placeholder, textarea::placeholder { color: #5b6377; }
-    button { background: #121a2a; cursor:pointer; transition: transform .06s ease, background .2s; }
-    button:hover { transform: translateY(-1px); }
-    .primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border:none; }
-    .muted { color: var(--muted); }
-    .right { margin-left:auto; }
-    ul { list-style:none; margin:0; padding:0; }
-    li { padding:12px 0; border-bottom:1px solid var(--line); cursor:pointer; }
-    li:last-child{ border-bottom:none; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Roboto Mono", monospace; }
-    pre { white-space: pre-wrap; word-break: break-word; margin:0; background:#0a0e18; padding:12px; border-radius:10px; border:1px solid var(--line); }
-    .hidden{ display:none !important; }
-
-    details.diag { margin-top: 6px; }
-    details.diag > summary { cursor:pointer; color: var(--muted); }
-    code.bad { color:#fff; background:#2a0d0d; padding:2px 6px; border-radius:6px; }
-    code.ok   { color:#0c2; background:#0f2416; padding:2px 6px; border-radius:6px; }
-    @media (max-width:720px){ .shell{margin:24px auto} header .sub{display:none} }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 ui-sans-serif,-apple-system,Segoe UI,Roboto,Inter,Arial,"Noto Sans","Helvetica Neue",sans-serif}
+    .shell{max-width:980px;margin:48px auto;padding:0 20px}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    header .title{font-size:22px;font-weight:650;letter-spacing:.3px}
+    header .sub{color:var(--muted);font-size:12px}
+    header .status{margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
+    .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+    .dot.ok{background:var(--ok)} .dot.err{background:var(--danger)} .dot.warn{background:var(--warn)}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.25);margin-bottom:16px}
+    h3{margin:0 0 10px;font-size:16px;letter-spacing:.2px}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    input,textarea,button{font:inherit;color:var(--ink);background:#0e1320;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+    input,textarea{flex:1;min-width:220px}
+    input::placeholder,textarea::placeholder{color:#5b6377}
+    button{background:#121a2a;cursor:pointer;transition:transform .06s ease,background .2s}
+    button:hover{transform:translateY(-1px)}
+    .primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border:none}
+    .muted{color:var(--muted)}
+    .right{margin-left:auto}
+    ul{list-style:none;margin:0;padding:0}
+    li{padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+    li:last-child{border-bottom:none}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Roboto Mono",monospace}
+    pre{white-space:pre-wrap;word-break:break-word;margin:0;background:#0a0e18;padding:12px;border-radius:10px;border:1px solid var(--line)}
+    .hidden{display:none!important}
+    details.diag{margin-top:6px}
+    details.diag>summary{cursor:pointer;color:var(--muted)}
+    code.bad{color:#fff;background:#2a0d0d;padding:2px 6px;border-radius:6px}
+    code.ok{color:#0c2;background:#0f2416;padding:2px 6px;border-radius:6px}
+    @media (max-width:720px){.shell{margin:24px auto} header .sub{display:none}}
   </style>
 </head>
 <body>
@@ -66,12 +61,12 @@
           <input id="password" type="password" placeholder="password" required autocomplete="new-password"/>
           <button class="primary" type="submit">Sign in</button>
         </div>
-        <div class="muted">Credentials are posted to the backend over HTTPS. We store nothing locally. On success, a short-lived cookie is set for this session.</div>
+        <div class="muted">No local storage. On success we set a short-lived session cookie from the backend token.</div>
       </form>
     </section>
 
     <section class="card hidden" id="inboxCard">
-      <div class="row" style="align-items:center; gap:12px">
+      <div class="row" style="align-items:center;gap:12px">
         <h3 style="margin:0">Inbox</h3>
         <button id="refreshBtn">Refresh</button>
         <button id="logoutBtn">Logout</button>
@@ -112,9 +107,9 @@
             <button id="runDiag">Run connectivity test</button>
           </div>
         </div>
-        <pre class="mono" id="diagOut" style="margin-top:10px; max-height:220px; overflow:auto"></pre>
+        <pre class="mono" id="diagOut" style="margin-top:10px;max-height:220px;overflow:auto"></pre>
         <div class="muted" style="margin-top:8px">
-          If you see <code class="bad">TypeError: Failed to fetch</code>, that’s usually CORS or the backend URL is down/wrong.  
+          If you see <code class="bad">TypeError: Failed to fetch</code>, that’s usually CORS or a wrong/down backend URL.  
           Open the health URL directly: <a href="https://emailserverbackend-production.up.railway.app/api/health" target="_blank" rel="noopener">/api/health</a>.
         </div>
       </details>
@@ -154,7 +149,6 @@
     const apiBaseEl = sel("#apiBase");
     const cookieStateEl = sel("#cookieState");
     const diagOut = sel("#diagOut");
-
     const userInput = sel("#username");
     const passInput = sel("#password");
     const loginForm = sel("#loginForm");
@@ -166,7 +160,7 @@
     apiBaseEl.textContent = API_BASE;
     cookieStateEl.textContent = getCookie(TOKEN_COOKIE) ? "present" : "absent";
 
-    // --- Health check (doesn't require CORS to render in browser tab; but XHR needs CORS) ---
+    // Health check (XHR; requires CORS to be correct)
     (async function health() {
       try {
         const r = await fetch(`${API_BASE}/api/health`, { cache: "no-store" });
@@ -175,13 +169,13 @@
         healthDot.classList.add(ok ? "ok" : "warn");
         healthText.textContent = ok ? "backend reachable" : `health HTTP ${r.status}`;
         if (!ok && text) healthText.textContent += ` · ${text.slice(0,80)}`;
-      } catch (e) {
+      } catch {
         healthDot.classList.add("err");
         healthText.textContent = "backend unreachable";
       }
     })();
 
-    // Try existing cookie
+    // Bootstrap from existing cookie (we only store token, not user)
     (async function bootstrap() {
       const t = getCookie(TOKEN_COOKIE);
       if (!t) return;
@@ -190,14 +184,10 @@
       inboxCard.classList.remove("hidden");
       composeCard.classList.remove("hidden");
       loginAs.textContent = "session active";
-      try {
-        await refreshInbox();
-      } catch {
-        forceLogout();
-      }
+      try { await refreshInbox(); } catch { forceLogout(); }
     })();
 
-    // --- Auth (no local storage; set only cookie) ---
+    // Auth
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       try {
@@ -216,8 +206,7 @@
         token = j.token;
         setCookie(TOKEN_COOKIE, token, Math.max(1, Number(j.ttlMinutes || 30)));
         authedUser = username.includes("@") ? username : `${username}@refnull.net`;
-
-        passInput.value = "";
+        passInput.value = ""; // never store
 
         loginCard.classList.add("hidden");
         inboxCard.classList.remove("hidden");
@@ -227,11 +216,11 @@
 
         await refreshInbox();
       } catch (err) {
-        alert("Sign-in failed: " + err.message + "\nIf this says 'Failed to fetch', open /api/health in a new tab from your Pages URL to confirm CORS/URL.");
+        alert("Sign-in failed: " + err.message + "\nIf it says 'Failed to fetch', verify CORS and API_BASE.");
       }
     });
 
-    // --- Inbox ---
+    // Inbox
     async function refreshInbox() {
       if (!token) throw new Error("no session");
       messageCard.classList.add("hidden");
@@ -247,8 +236,8 @@
       if (!j.messages?.length) { listEl.innerHTML = "<li class='muted'>No messages</li>"; return; }
       listEl.innerHTML = "";
       j.messages.forEach(m => {
-        const li = document.createElement("li");
         const when = m.date ? new Date(m.date).toLocaleString() : "";
+        const li = document.createElement("li");
         li.innerHTML = `<strong>${escapeHtml(m.subject || "(no subject)")}</strong><br><span class="muted">${when} — ${escapeHtml(m.from || "")}</span>`;
         li.onclick = () => openMessage(m.uid);
         listEl.appendChild(li);
@@ -274,10 +263,10 @@
     sel("#refreshBtn").onclick = refreshInbox;
     sel("#closeMsgBtn").onclick = () => messageCard.classList.add("hidden");
 
-    // --- Logout ---
+    // Logout
     sel("#logoutBtn").onclick = async () => {
       try {
-        if (token) await fetch(`${API_BASE}/api/logout`, { method:"POST", headers: { authorization: `Bearer ${token}` } });
+        if (token) await fetch(`${API_BASE}/api/logout`, { method:"POST", headers:{ authorization:`Bearer ${token}` }});
       } catch {}
       forceLogout();
     };
@@ -291,22 +280,27 @@
       cookieStateEl.textContent = "absent";
     }
 
-    // --- Diagnostics ---
+    // Diagnostics
     sel("#runDiag").onclick = async () => {
       const logs = [];
-      const log = (m) => { logs.push(m); diagOut.textContent = logs.join("\\n"); };
-
+      const log = (m) => { logs.push(m); diagOut.textContent = logs.join("\n"); };
       log(`Origin: ${location.origin}`);
       log(`API_BASE: ${API_BASE}`);
       try {
-        log("→ GET /api/health …");
+        log("→ GET /api/health");
         const r = await fetch(`${API_BASE}/api/health`, { method:"GET", cache:"no-store" });
         const text = await r.text().catch(()=>"(no body)");
         log(`← ${r.status} ${r.statusText}`);
         log(text);
+        log("");
+        log("→ GET /api/probe");
+        const rp = await fetch(`${API_BASE}/api/probe`, { method:"GET", cache:"no-store" });
+        const t2 = await rp.text().catch(()=>"(no body)");
+        log(`← ${rp.status} ${rp.statusText}`);
+        log(t2);
       } catch (e) {
         log(`✖ fetch error: ${e?.message || e}`);
-        log("Likely CORS or network/DNS. Open the health URL in a new tab from this origin to confirm.");
+        log("Likely CORS or backend URL. Open the links above directly in a new tab.");
       }
     };
 
