@@ -5,111 +5,156 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>refnull Mail</title>
   <style>
-    :root { --b:#111; --t:#222; --m:#666; --bd:#e5e5e5; }
+    :root {
+      --bg: #0b0d12; --panel: #11141b; --ink: #e8ebf1; --muted:#8b93a7; --line:#1f2430;
+      --accent:#3a7afe; --accent-2:#7aa2ff; --danger:#e25555; --ok:#2bb673; --warn:#e6b800;
+    }
     * { box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; color: var(--t); }
-    h1 { margin: 0 0 16px; font-size: 20px; }
-    .card { border: 1px solid var(--bd); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
-    .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
-    input, button, textarea { padding: 10px 12px; border: 1px solid var(--bd); border-radius: 8px; font-size: 14px; }
-    input, textarea { flex: 1; min-width: 220px; }
-    button { cursor: pointer; background: #fff; }
-    button.primary { background: var(--b); color: #fff; border-color: var(--b); }
-    ul { list-style: none; padding: 0; margin: 0; }
-    li { border-bottom: 1px solid var(--bd); padding: 10px 0; cursor: pointer; }
-    li:last-child { border-bottom: none; }
-    .muted { color: var(--m); font-size: 12px; }
-    .right { margin-left: auto; }
-    .toolbar { display: flex; gap: 8px; align-items: center; }
-    .hidden { display: none !important; }
-    pre { white-space: pre-wrap; word-wrap: break-word; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-    @media (max-width:600px){ body{margin:12px} }
+    html, body { height: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 ui-sans-serif, -apple-system, Segoe UI, Roboto, Inter, Arial, "Noto Sans", "Helvetica Neue", sans-serif; }
+    
+    .shell { max-width: 980px; margin: 48px auto; padding: 0 20px; }
+    header { display:flex; align-items:center; gap:16px; margin-bottom: 18px; }
+    header .title { font-size: 22px; font-weight: 650; letter-spacing:.3px; }
+    header .sub { color: var(--muted); font-size: 12px; }
+    header .status { margin-left:auto; font-size:12px; color: var(--muted); display:flex; align-items:center; gap:8px; }
+    .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+    .dot.ok{ background: var(--ok); } .dot.err{ background: var(--danger); } .dot.warn{ background: var(--warn); }
+
+    .card { background: var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow: 0 8px 24px rgba(0,0,0,.25); margin-bottom:16px; }
+    h3 { margin:0 0 10px; font-size:16px; letter-spacing:.2px; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; }
+    input, textarea, button {
+      font: inherit; color: var(--ink); background:#0e1320; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+    }
+    input, textarea { flex:1; min-width: 220px; }
+    input::placeholder, textarea::placeholder { color: #5b6377; }
+    button { background: #121a2a; cursor:pointer; transition: transform .06s ease, background .2s; }
+    button:hover { transform: translateY(-1px); }
+    .primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border:none; }
+    .muted { color: var(--muted); }
+    .right { margin-left:auto; }
+    ul { list-style:none; margin:0; padding:0; }
+    li { padding:12px 0; border-bottom:1px solid var(--line); cursor:pointer; }
+    li:last-child{ border-bottom:none; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Roboto Mono", monospace; }
+    pre { white-space: pre-wrap; word-break: break-word; margin:0; background:#0a0e18; padding:12px; border-radius:10px; border:1px solid var(--line); }
+    .hidden{ display:none !important; }
+
+    details.diag { margin-top: 6px; }
+    details.diag > summary { cursor:pointer; color: var(--muted); }
+    code.bad { color:#fff; background:#2a0d0d; padding:2px 6px; border-radius:6px; }
+    code.ok   { color:#0c2; background:#0f2416; padding:2px 6px; border-radius:6px; }
+    @media (max-width:720px){ .shell{margin:24px auto} header .sub{display:none} }
   </style>
 </head>
 <body>
-  <h1>refnull Mail</h1>
-
-  <div class="card">
-    <div class="toolbar">
-      <span class="muted">Frontend → GitHub Pages · Backend → Railway · Server → hMail (mail.refnull.net)</span>
-      <span class="right muted" id="healthStatus">checking…</span>
-    </div>
-  </div>
-
-  <div class="card" id="loginCard">
-    <h3>Login</h3>
-    <form id="loginForm" autocomplete="off">
-      <div class="row">
-        <input id="username" type="text" placeholder="username or you@refnull.net" required autocomplete="off"/>
-        <input id="password" type="password" placeholder="password" required autocomplete="new-password"/>
-        <button type="submit" class="primary">Login</button>
+  <div class="shell">
+    <header>
+      <div>
+        <div class="title">refnull Mail</div>
+        <div class="sub">Frontend: GitHub Pages · Backend: Railway · Server: hMail (mail.refnull.net)</div>
       </div>
-      <div class="muted">No data is stored locally. A short-lived token cookie is set on sign-in.</div>
-    </form>
-  </div>
+      <div class="status"><span class="dot" id="healthDot"></span><span id="healthText">checking…</span></div>
+    </header>
 
-  <div class="card hidden" id="inboxCard">
-    <div class="toolbar">
-      <strong>Inbox</strong>
-      <button id="refreshBtn">Refresh</button>
-      <button id="logoutBtn">Logout</button>
-      <span id="loginAs" class="right muted"></span>
-    </div>
-    <ul id="list"></ul>
-  </div>
+    <section class="card" id="loginCard">
+      <h3>Sign in</h3>
+      <form id="loginForm" autocomplete="off">
+        <div class="row">
+          <input id="username" type="text" placeholder="username or you@refnull.net" required autocomplete="off"/>
+          <input id="password" type="password" placeholder="password" required autocomplete="new-password"/>
+          <button class="primary" type="submit">Sign in</button>
+        </div>
+        <div class="muted">Credentials are posted to the backend over HTTPS. We store nothing locally. On success, a short-lived cookie is set for this session.</div>
+      </form>
+    </section>
 
-  <div class="card hidden" id="messageCard">
-    <div class="toolbar">
-      <strong>Message</strong>
-      <button id="closeMsgBtn" class="right">Close</button>
-    </div>
-    <pre id="messagePre" class="mono"></pre>
-  </div>
+    <section class="card hidden" id="inboxCard">
+      <div class="row" style="align-items:center; gap:12px">
+        <h3 style="margin:0">Inbox</h3>
+        <button id="refreshBtn">Refresh</button>
+        <button id="logoutBtn">Logout</button>
+        <span class="right muted" id="loginAs"></span>
+      </div>
+      <ul id="list"></ul>
+    </section>
 
-  <div class="card hidden" id="composeCard">
-    <h3>Compose</h3>
-    <div class="row"><input id="to" placeholder="to@example.com"/></div>
-    <div class="row"><input id="subject" placeholder="Subject"/></div>
-    <div class="row"><textarea id="body" rows="6" placeholder="Message"></textarea></div>
-    <div class="row">
-      <button id="sendBtn" class="primary">Send</button>
-      <span id="sendStatus" class="muted"></span>
-    </div>
+    <section class="card hidden" id="messageCard">
+      <div class="row" style="align-items:center">
+        <h3 style="margin:0">Message</h3>
+        <button id="closeMsgBtn" class="right">Close</button>
+      </div>
+      <pre class="mono" id="messagePre"></pre>
+    </section>
+
+    <section class="card hidden" id="composeCard">
+      <h3>Compose</h3>
+      <div class="row"><input id="to" placeholder="to@example.com"/></div>
+      <div class="row"><input id="subject" placeholder="Subject"/></div>
+      <div class="row"><textarea id="body" rows="6" placeholder="Message"></textarea></div>
+      <div class="row" style="align-items:center">
+        <button id="sendBtn" class="primary">Send</button>
+        <span id="sendStatus" class="muted"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <details class="diag" id="diag">
+        <summary>Diagnostics</summary>
+        <div class="row mono" style="font-size:12px">
+          <div style="flex:1">
+            <div>Frontend origin: <code id="origin"></code></div>
+            <div>Backend base: <code id="apiBase"></code></div>
+            <div>Token cookie: <code id="cookieState"></code></div>
+          </div>
+          <div class="right">
+            <button id="runDiag">Run connectivity test</button>
+          </div>
+        </div>
+        <pre class="mono" id="diagOut" style="margin-top:10px; max-height:220px; overflow:auto"></pre>
+        <div class="muted" style="margin-top:8px">
+          If you see <code class="bad">TypeError: Failed to fetch</code>, that’s usually CORS or the backend URL is down/wrong.  
+          Open the health URL directly: <a href="https://emailserverbackend-production.up.railway.app/api/health" target="_blank" rel="noopener">/api/health</a>.
+        </div>
+      </details>
+    </section>
   </div>
 
   <script>
-    // HARD-WIRED BACKEND
+    // --- HARD-WIRED BACKEND ---
     const API_BASE = "https://emailserverbackend-production.up.railway.app";
 
-    // --- Minimal cookie helpers (token only) ---
+    // --- Cookie helpers (token only) ---
+    const TOKEN_COOKIE = "refnull_token";
     function setCookie(name, value, minutes) {
-      const d = new Date();
-      d.setTime(d.getTime() + minutes * 60 * 1000);
-      // Note: HttpOnly cannot be set from JS; cookie is JS-accessible.
+      const d = new Date(Date.now() + minutes * 60_000);
       document.cookie = `${name}=${encodeURIComponent(value)}; expires=${d.toUTCString()}; path=/; SameSite=Lax; Secure`;
     }
     function getCookie(name) {
-      const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&') + '=([^;]*)'));
+      const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[-[\\]{}()*+?.,\\\\^$|#\\s]/g, '\\$&') + '=([^;]*)'));
       return m ? decodeURIComponent(m[1]) : null;
     }
-    function deleteCookie(name) {
+    function delCookie(name) {
       document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; SameSite=Lax; Secure`;
     }
 
-    const TOKEN_COOKIE = "refnull_token";
-
-    // UI refs
-    const sel = (q) => document.querySelector(q);
+    // --- UI Refs ---
+    const sel = q => document.querySelector(q);
     const loginCard = sel("#loginCard");
     const inboxCard = sel("#inboxCard");
     const messageCard = sel("#messageCard");
     const composeCard = sel("#composeCard");
-
     const listEl = sel("#list");
     const messagePre = sel("#messagePre");
     const loginAs = sel("#loginAs");
-    const healthStatus = sel("#healthStatus");
+    const healthDot = sel("#healthDot");
+    const healthText = sel("#healthText");
+    const originEl = sel("#origin");
+    const apiBaseEl = sel("#apiBase");
+    const cookieStateEl = sel("#cookieState");
+    const diagOut = sel("#diagOut");
+
     const userInput = sel("#username");
     const passInput = sel("#password");
     const loginForm = sel("#loginForm");
@@ -117,39 +162,47 @@
     let token = null;
     let authedUser = null;
 
-    // Health check
-    (async function health(){
+    originEl.textContent = location.origin;
+    apiBaseEl.textContent = API_BASE;
+    cookieStateEl.textContent = getCookie(TOKEN_COOKIE) ? "present" : "absent";
+
+    // --- Health check (doesn't require CORS to render in browser tab; but XHR needs CORS) ---
+    (async function health() {
       try {
         const r = await fetch(`${API_BASE}/api/health`, { cache: "no-store" });
-        const j = await r.json();
-        healthStatus.textContent = r.ok ? `backend OK · ${j.host}` : "backend unreachable";
-      } catch {
-        healthStatus.textContent = "backend unreachable";
+        const ok = r.ok;
+        const text = await r.text().catch(()=>"");
+        healthDot.classList.add(ok ? "ok" : "warn");
+        healthText.textContent = ok ? "backend reachable" : `health HTTP ${r.status}`;
+        if (!ok && text) healthText.textContent += ` · ${text.slice(0,80)}`;
+      } catch (e) {
+        healthDot.classList.add("err");
+        healthText.textContent = "backend unreachable";
       }
     })();
 
-    // If token cookie exists, use it immediately
-    (async function bootstrapFromCookie() {
+    // Try existing cookie
+    (async function bootstrap() {
       const t = getCookie(TOKEN_COOKIE);
       if (!t) return;
       token = t;
-      // We don't know the username without calling something; show UI and let Refresh drive errors.
       loginCard.classList.add("hidden");
       inboxCard.classList.remove("hidden");
       composeCard.classList.remove("hidden");
-      loginAs.textContent = `session active`;
-      await refreshInbox().catch(() => {
-        // If it fails (expired), force logout UX
-        doLogoutUI();
-      });
+      loginAs.textContent = "session active";
+      try {
+        await refreshInbox();
+      } catch {
+        forceLogout();
+      }
     })();
 
-    // Auth (does not store username/pass; sets only token cookie)
+    // --- Auth (no local storage; set only cookie) ---
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       try {
-        const username = userInput.value.trim();
-        const password = passInput.value;
+        const username = (userInput.value || "").trim();
+        const password = (passInput.value || "");
         if (!username || !password) throw new Error("username and password required");
 
         const r = await fetch(`${API_BASE}/api/login`, {
@@ -157,28 +210,28 @@
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ username, password })
         });
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.error || "login failed");
+        const j = await r.json().catch(()=>({}));
+        if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
 
         token = j.token;
-        setCookie(TOKEN_COOKIE, token, Math.max(1, Number(j.ttlMinutes || 30))); // minutes
+        setCookie(TOKEN_COOKIE, token, Math.max(1, Number(j.ttlMinutes || 30)));
         authedUser = username.includes("@") ? username : `${username}@refnull.net`;
 
-        // Clear password field immediately; do not persist anything else
         passInput.value = "";
 
         loginCard.classList.add("hidden");
         inboxCard.classList.remove("hidden");
         composeCard.classList.remove("hidden");
         loginAs.textContent = `logged in as ${authedUser}`;
+        cookieStateEl.textContent = "present";
 
         await refreshInbox();
       } catch (err) {
-        alert("Login error: " + err.message);
+        alert("Sign-in failed: " + err.message + "\nIf this says 'Failed to fetch', open /api/health in a new tab from your Pages URL to confirm CORS/URL.");
       }
     });
 
-    // Inbox
+    // --- Inbox ---
     async function refreshInbox() {
       if (!token) throw new Error("no session");
       messageCard.classList.add("hidden");
@@ -186,24 +239,17 @@
       const r = await fetch(`${API_BASE}/api/messages?limit=25`, {
         headers: { authorization: `Bearer ${token}` }
       });
-      const j = await r.json();
+      const j = await r.json().catch(()=>({}));
       if (!r.ok) {
-        if (r.status === 401) {
-          alert("Session expired. Please sign in again.");
-          doLogoutUI();
-          return;
-        }
-        throw new Error(j.error || "failed to list");
+        if (r.status === 401) { alert("Session expired. Please sign in again."); forceLogout(); return; }
+        throw new Error(j.error || `HTTP ${r.status}`);
       }
-      if (!j.messages.length) {
-        listEl.innerHTML = "<li class='muted'>No messages</li>";
-        return;
-      }
+      if (!j.messages?.length) { listEl.innerHTML = "<li class='muted'>No messages</li>"; return; }
       listEl.innerHTML = "";
       j.messages.forEach(m => {
         const li = document.createElement("li");
-        const when = new Date(m.date).toLocaleString();
-        li.innerHTML = `<strong>${m.subject || "(no subject)"}</strong><br><span class="muted">${when} — ${m.from || ""}</span>`;
+        const when = m.date ? new Date(m.date).toLocaleString() : "";
+        li.innerHTML = `<strong>${escapeHtml(m.subject || "(no subject)")}</strong><br><span class="muted">${when} — ${escapeHtml(m.from || "")}</span>`;
         li.onclick = () => openMessage(m.uid);
         listEl.appendChild(li);
       });
@@ -214,10 +260,10 @@
       const r = await fetch(`${API_BASE}/api/messages/${uid}`, {
         headers: { authorization: `Bearer ${token}` }
       });
-      const j = await r.json();
+      const j = await r.json().catch(()=>({}));
       if (!r.ok) {
-        if (r.status === 401) { alert("Session expired."); doLogoutUI(); return; }
-        alert(j.error || "failed to fetch message");
+        if (r.status === 401) { alert("Session expired."); forceLogout(); return; }
+        alert(j.error || `HTTP ${r.status}`);
         return;
       }
       messagePre.textContent = j.text || "(no body)";
@@ -226,60 +272,45 @@
     }
 
     sel("#refreshBtn").onclick = refreshInbox;
+    sel("#closeMsgBtn").onclick = () => messageCard.classList.add("hidden");
 
-    function doLogoutUI() {
-      deleteCookie(TOKEN_COOKIE);
+    // --- Logout ---
+    sel("#logoutBtn").onclick = async () => {
+      try {
+        if (token) await fetch(`${API_BASE}/api/logout`, { method:"POST", headers: { authorization: `Bearer ${token}` } });
+      } catch {}
+      forceLogout();
+    };
+    function forceLogout() {
+      delCookie(TOKEN_COOKIE);
       token = null; authedUser = null;
       loginCard.classList.remove("hidden");
       inboxCard.classList.add("hidden");
       messageCard.classList.add("hidden");
       composeCard.classList.add("hidden");
+      cookieStateEl.textContent = "absent";
     }
 
-    sel("#logoutBtn").onclick = async () => {
-      try {
-        if (token) {
-          await fetch(`${API_BASE}/api/logout`, {
-            method: "POST",
-            headers: { authorization: `Bearer ${token}` }
-          });
-        }
-      } catch {}
-      doLogoutUI();
-    };
+    // --- Diagnostics ---
+    sel("#runDiag").onclick = async () => {
+      const logs = [];
+      const log = (m) => { logs.push(m); diagOut.textContent = logs.join("\\n"); };
 
-    // Send
-    sel("#sendBtn").onclick = async () => {
-      const to = sel("#to").value.trim();
-      const subject = sel("#subject").value;
-      const text = sel("#body").value;
-      const status = sel("#sendStatus");
-      if (!token) { status.textContent = "Not signed in."; return; }
-      if (!to || !text) { status.textContent = "to and body are required"; return; }
-      status.textContent = "Sending…";
+      log(`Origin: ${location.origin}`);
+      log(`API_BASE: ${API_BASE}`);
       try {
-        const r = await fetch(`${API_BASE}/api/send`, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ to, subject, text })
-        });
-        const j = await r.json();
-        if (!r.ok) {
-          if (r.status === 401) { status.textContent = "Session expired."; doLogoutUI(); return; }
-          throw new Error(j.error || "send failed");
-        }
-        status.textContent = `Sent · id ${j.messageId}`;
-        sel("#to").value = ""; sel("#subject").value = ""; sel("#body").value = "";
-        refreshInbox();
-      } catch (err) {
-        status.textContent = "Error: " + err.message;
+        log("→ GET /api/health …");
+        const r = await fetch(`${API_BASE}/api/health`, { method:"GET", cache:"no-store" });
+        const text = await r.text().catch(()=>"(no body)");
+        log(`← ${r.status} ${r.statusText}`);
+        log(text);
+      } catch (e) {
+        log(`✖ fetch error: ${e?.message || e}`);
+        log("Likely CORS or network/DNS. Open the health URL in a new tab from this origin to confirm.");
       }
     };
 
-    sel("#closeMsgBtn").onclick = () => messageCard.classList.add("hidden");
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
   </script>
 </body>
 </html>
