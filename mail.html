@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mail</title>
+<style>
+  :root { color-scheme: light dark; }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    display:grid;grid-template-rows:48px 1fr;
+  }
+  .topbar{
+    display:flex;align-items:center;gap:8px;
+    border-bottom:1px solid rgba(0,0,0,.15);
+    padding:0 8px;
+  }
+  .topbar h1{margin:0;font-size:15px;}
+  .btn{
+    border:1px solid rgba(0,0,0,.25);
+    background:transparent;
+    padding:6px 10px;cursor:pointer;
+    transition:background-color .1s ease,transform .1s ease;
+  }
+  .btn:hover{background:rgba(0,0,0,.08);}
+  .btn:active{transform:scale(.97);background:rgba(0,0,0,.15);}
+  .wrap{display:grid;grid-template-columns:280px 1fr;}
+  .sidebar{border-right:1px solid rgba(0,0,0,.15);display:grid;grid-template-rows:auto 1fr;}
+  .folders{display:flex;gap:6px;padding:6px;border-bottom:1px solid rgba(0,0,0,.12);}
+  .list{overflow:auto;}
+  .row{padding:8px 10px;border-bottom:1px solid rgba(0,0,0,.1);cursor:pointer;}
+  .row:hover{background:rgba(0,0,0,.05);}
+  .viewer,.compose{padding:10px;overflow:auto;}
+  .compose input,.compose textarea{
+    width:100%;border:1px solid rgba(0,0,0,.25);padding:8px 10px;margin-bottom:8px;
+  }
+  .hidden{display:none;}
+  .status{font-size:12px;opacity:.8;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1 id="brand">Mail</h1>
+  <div style="flex:1"></div>
+  <button id="composeBtn" class="btn">Compose</button>
+  <button id="refreshBtn" class="btn">Refresh</button>
+  <button id="logoutBtn" class="btn">Logout</button>
+</div>
+
+<div class="wrap">
+  <aside class="sidebar">
+    <div class="folders">
+      <button class="btn" data-folder="inbox">Inbox</button>
+      <button class="btn" data-folder="sent">Sent</button>
+    </div>
+    <div class="list" id="list"></div>
+  </aside>
+
+  <section class="viewer" id="viewer">
+    <div id="viewerEmpty" class="status">Select a message.</div>
+    <div id="viewerCard" class="hidden">
+      <div id="vSubject"></div>
+      <div id="vFrom"></div>
+      <div id="vDate"></div>
+      <pre id="vBody"></pre>
+      <button id="replyBtn" class="btn">Reply</button>
+    </div>
+  </section>
+
+  <section class="compose hidden" id="composeView">
+    <button id="backBtn" class="btn">← Back</button><br>
+    <input id="cTo" type="email" placeholder="To">
+    <input id="cSubject" placeholder="Subject">
+    <textarea id="cBody" placeholder="Message"></textarea>
+    <button id="sendBtn" class="btn">Send</button>
+    <div id="composeStatus" class="status"></div>
+  </section>
+</div>
+
+<script type="module">
+const BACKEND="https://emailserverbackend-production.up.railway.app";
+const el=id=>document.getElementById(id);
+const list=el("list"),vCard=el("viewerCard"),vEmpty=el("viewerEmpty"),
+vSubject=el("vSubject"),vFrom=el("vFrom"),vDate=el("vDate"),vBody=el("vBody");
+const composeView=el("composeView");
+
+async function api(path,opt={}) {
+  const r=await fetch(BACKEND+path,{credentials:"include",...opt});
+  if(!r.ok)throw new Error("API error "+r.status);
+  return r.json();
+}
+
+async function loadList(){
+  list.innerHTML="<div class='status'>Loading…</div>";
+  const d=await api("/api/mail/messages?folder=inbox");
+  list.innerHTML="";
+  for(const m of d.items){
+    const row=document.createElement("div");
+    row.className="row";
+    row.textContent=`${m.from} — ${m.subject}`;
+    row.onclick=()=>openMsg(m.id);
+    list.appendChild(row);
+  }
+}
+async function openMsg(id){
+  const m=await api("/api/mail/messages/"+id);
+  vSubject.textContent=m.subject;vFrom.textContent=m.from;
+  vDate.textContent=new Date(m.date).toLocaleString();
+  vBody.textContent=m.body||"";vEmpty.classList.add("hidden");
+  vCard.classList.remove("hidden");
+}
+el("composeBtn").onclick=()=>{composeView.classList.remove("hidden");el("viewer").classList.add("hidden");};
+el("backBtn").onclick=()=>{composeView.classList.add("hidden");el("viewer").classList.remove("hidden");};
+el("sendBtn").onclick=async()=>{
+  const to=el("cTo").value,subject=el("cSubject").value,body=el("cBody").value;
+  const r=await api("/api/mail/send",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({to,subject,body})});
+  el("composeStatus").textContent="Sent!";
+};
+el("logoutBtn").onclick=async()=>{await api("/api/auth/logout",{method:"POST"});location="/index.html";};
+el("refreshBtn").onclick=()=>loadList();
+loadList();
+</script>
+</body>
+</html>
