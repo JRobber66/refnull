@@ -8,50 +8,124 @@
   :root { color-scheme: light dark; }
   * { box-sizing: border-box; }
   body {
-    margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    margin: 0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     display: grid; place-items: center; min-height: 100dvh; padding: 16px;
   }
-  .card {
-    width: 100%; max-width: 420px;
-    border: 1px solid rgba(0,0,0,.15);
-    padding: 24px;
-  }
-  h1 { margin: 0 0 12px; font-size: 1.25rem; }
-  label { display: block; margin-top: 12px; font-size: .9rem; }
+  .card { width:100%; max-width:420px; border:1px solid rgba(0,0,0,.15); padding:24px; }
+  h1 { margin:0 0 12px; font-size:1.25rem; font-weight:600; }
+  label { display:block; margin-top:12px; font-size:.9rem; }
   input {
-    width: 100%; padding: 10px 12px;
-    border: 1px solid rgba(0,0,0,.25);
-    font-size: 1rem;
+    width:100%; padding:10px 12px; border:1px solid rgba(0,0,0,.25); font-size:1rem; outline:none;
   }
+  .row { display:flex; gap:8px; align-items:center; margin-top:10px; }
   .btn {
-    width: 100%; margin-top: 16px; padding: 12px;
-    border: 1px solid rgba(0,0,0,.25); background: transparent;
-    font-size: 1rem; cursor: pointer;
-    transition: background-color .1s ease, transform .1s ease;
+    width:100%; margin-top:16px; padding:12px;
+    border:1px solid rgba(0,0,0,.25); background:transparent;
+    font-size:1rem; cursor:pointer; transition:background-color .1s ease, transform .1s ease;
   }
   .btn:hover { background: rgba(0,0,0,.08); }
   .btn:active { transform: scale(0.97); background: rgba(0,0,0,.15); }
-  .btn:disabled { opacity: .5; cursor: not-allowed; }
-  .small { font-size: .8rem; opacity: .7; }
-  .msg { margin-top: 12px; font-size: .9rem; min-height: 1.2em; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .small { font-size:.8rem; opacity:.7; }
+  .msg { margin-top:12px; min-height:1.2em; font-size:.9rem; }
 </style>
 </head>
 <body>
   <main class="card">
     <h1>Sign in</h1>
-    <form id="signin-form" autocomplete="on" novalidate>
-      <label>Email</label>
+    <form id="form" autocomplete="on" novalidate>
+      <label for="email">Email</label>
       <input id="email" type="email" required placeholder="you@example.com" />
 
-      <label>Password</label>
+      <label for="password">Password</label>
       <input id="password" type="password" required placeholder="••••••••" />
 
+      <div class="row">
+        <input id="remember" type="checkbox" />
+        <label for="remember" class="small">Remember email & password locally</label>
+      </div>
+
       <button id="submit" type="submit" class="btn">Continue</button>
-      <div class="small">Encrypted + auto-saved locally</div>
+      <div class="small">Plain JSON login (no encryption). Cookie-based session.</div>
       <div class="msg" id="msg"></div>
     </form>
   </main>
-  <script type="module" src="./auth.js"></script>
+
+<script type="module">
+const BACKEND = "https://emailserverbackend-production.up.railway.app"; // change if needed
+const el = (id) => document.getElementById(id);
+const form = el('form');
+const email = el('email');
+const password = el('password');
+const remember = el('remember');
+const msg = el('msg');
+const submitBtn = el('submit');
+
+// Prefill from localStorage
+(function initPrefill() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('refnull_login') || '{}');
+    if (saved.email) email.value = saved.email;
+    if (saved.password) password.value = saved.password;
+    if (saved.email || saved.password) remember.checked = true;
+  } catch {}
+})();
+
+function setMessage(text, isError=false) {
+  msg.textContent = text || '';
+  msg.style.color = isError ? 'crimson' : 'inherit';
+}
+
+async function api(path, opt={}) {
+  const r = await fetch(BACKEND + path, { credentials: 'include', ...opt });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  setMessage('');
+  submitBtn.disabled = true;
+
+  const creds = { email: email.value.trim(), password: password.value };
+  if (!creds.email || !creds.password) {
+    setMessage('Enter email and password.', true);
+    submitBtn.disabled = false;
+    return;
+  }
+
+  // Save or clear local storage
+  if (remember.checked) {
+    localStorage.setItem('refnull_login', JSON.stringify(creds));
+  } else {
+    localStorage.removeItem('refnull_login');
+  }
+
+  try {
+    // PLAINTEXT LOGIN (backend must expose POST /api/auth/login-plain)
+    await api('/api/auth/login-plain', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(creds),
+    });
+
+    // Verify session then go to mail.html
+    await api('/api/me');
+    location.href = 'mail.html';
+  } catch (err) {
+    setMessage('Sign-in failed. ' + (err.message || ''), true);
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+// If already authed, skip to mail.html
+(async function maybeAuthed() {
+  try {
+    await api('/api/me');
+    location.href = 'mail.html';
+  } catch {}
+})();
+</script>
 </body>
 </html>
-
