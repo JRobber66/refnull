@@ -1,310 +1,57 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>refnull Mail</title>
-  <style>
-    :root {
-      --bg:#0b0d12; --panel:#11141b; --ink:#e8ebf1; --muted:#8b93a7; --line:#1f2430;
-      --accent:#3a7afe; --accent-2:#7aa2ff; --danger:#e25555; --ok:#2bb673; --warn:#e6b800;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 ui-sans-serif,-apple-system,Segoe UI,Roboto,Inter,Arial,"Noto Sans","Helvetica Neue",sans-serif}
-    .shell{max-width:980px;margin:48px auto;padding:0 20px}
-    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
-    header .title{font-size:22px;font-weight:650;letter-spacing:.3px}
-    header .sub{color:var(--muted);font-size:12px}
-    header .status{margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
-    .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
-    .dot.ok{background:var(--ok)} .dot.err{background:var(--danger)} .dot.warn{background:var(--warn)}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.25);margin-bottom:16px}
-    h3{margin:0 0 10px;font-size:16px;letter-spacing:.2px}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    input,textarea,button{font:inherit;color:var(--ink);background:#0e1320;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-    input,textarea{flex:1;min-width:220px}
-    input::placeholder,textarea::placeholder{color:#5b6377}
-    button{background:#121a2a;cursor:pointer;transition:transform .06s ease,background .2s}
-    button:hover{transform:translateY(-1px)}
-    .primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border:none}
-    .muted{color:var(--muted)}
-    .right{margin-left:auto}
-    ul{list-style:none;margin:0;padding:0}
-    li{padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
-    li:last-child{border-bottom:none}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Roboto Mono",monospace}
-    pre{white-space:pre-wrap;word-break:break-word;margin:0;background:#0a0e18;padding:12px;border-radius:10px;border:1px solid var(--line)}
-    .hidden{display:none!important}
-    details.diag{margin-top:6px}
-    details.diag>summary{cursor:pointer;color:var(--muted)}
-    code.bad{color:#fff;background:#2a0d0d;padding:2px 6px;border-radius:6px}
-    code.ok{color:#0c2;background:#0f2416;padding:2px 6px;border-radius:6px}
-    @media (max-width:720px){.shell{margin:24px auto} header .sub{display:none}}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sign in</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    display: grid; place-items: center; min-height: 100dvh; padding: 16px;
+  }
+  .card {
+    width: 100%; max-width: 420px;
+    border: 1px solid rgba(0,0,0,.15);
+    padding: 24px;
+  }
+  h1 { margin: 0 0 12px; font-size: 1.25rem; }
+  label { display: block; margin-top: 12px; font-size: .9rem; }
+  input {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid rgba(0,0,0,.25);
+    font-size: 1rem;
+  }
+  .btn {
+    width: 100%; margin-top: 16px; padding: 12px;
+    border: 1px solid rgba(0,0,0,.25); background: transparent;
+    font-size: 1rem; cursor: pointer;
+    transition: background-color .1s ease, transform .1s ease;
+  }
+  .btn:hover { background: rgba(0,0,0,.08); }
+  .btn:active { transform: scale(0.97); background: rgba(0,0,0,.15); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .small { font-size: .8rem; opacity: .7; }
+  .msg { margin-top: 12px; font-size: .9rem; min-height: 1.2em; }
+</style>
 </head>
 <body>
-  <div class="shell">
-    <header>
-      <div>
-        <div class="title">refnull Mail</div>
-        <div class="sub">Frontend: GitHub Pages · Backend: Railway · Server: hMail (mail.refnull.net)</div>
-      </div>
-      <div class="status"><span class="dot" id="healthDot"></span><span id="healthText">checking…</span></div>
-    </header>
+  <main class="card">
+    <h1>Sign in</h1>
+    <form id="signin-form" autocomplete="on" novalidate>
+      <label>Email</label>
+      <input id="email" type="email" required placeholder="you@example.com" />
 
-    <section class="card" id="loginCard">
-      <h3>Sign in</h3>
-      <form id="loginForm" autocomplete="off">
-        <div class="row">
-          <input id="username" type="text" placeholder="username or you@refnull.net" required autocomplete="off"/>
-          <input id="password" type="password" placeholder="password" required autocomplete="new-password"/>
-          <button class="primary" type="submit">Sign in</button>
-        </div>
-        <div class="muted">No local storage. On success we set a short-lived session cookie from the backend token.</div>
-      </form>
-    </section>
+      <label>Password</label>
+      <input id="password" type="password" required placeholder="••••••••" />
 
-    <section class="card hidden" id="inboxCard">
-      <div class="row" style="align-items:center;gap:12px">
-        <h3 style="margin:0">Inbox</h3>
-        <button id="refreshBtn">Refresh</button>
-        <button id="logoutBtn">Logout</button>
-        <span class="right muted" id="loginAs"></span>
-      </div>
-      <ul id="list"></ul>
-    </section>
-
-    <section class="card hidden" id="messageCard">
-      <div class="row" style="align-items:center">
-        <h3 style="margin:0">Message</h3>
-        <button id="closeMsgBtn" class="right">Close</button>
-      </div>
-      <pre class="mono" id="messagePre"></pre>
-    </section>
-
-    <section class="card hidden" id="composeCard">
-      <h3>Compose</h3>
-      <div class="row"><input id="to" placeholder="to@example.com"/></div>
-      <div class="row"><input id="subject" placeholder="Subject"/></div>
-      <div class="row"><textarea id="body" rows="6" placeholder="Message"></textarea></div>
-      <div class="row" style="align-items:center">
-        <button id="sendBtn" class="primary">Send</button>
-        <span id="sendStatus" class="muted"></span>
-      </div>
-    </section>
-
-    <section class="card">
-      <details class="diag" id="diag">
-        <summary>Diagnostics</summary>
-        <div class="row mono" style="font-size:12px">
-          <div style="flex:1">
-            <div>Frontend origin: <code id="origin"></code></div>
-            <div>Backend base: <code id="apiBase"></code></div>
-            <div>Token cookie: <code id="cookieState"></code></div>
-          </div>
-          <div class="right">
-            <button id="runDiag">Run connectivity test</button>
-          </div>
-        </div>
-        <pre class="mono" id="diagOut" style="margin-top:10px;max-height:220px;overflow:auto"></pre>
-        <div class="muted" style="margin-top:8px">
-          If you see <code class="bad">TypeError: Failed to fetch</code>, that’s usually CORS or a wrong/down backend URL.  
-          Open the health URL directly: <a href="https://emailserverbackend-production.up.railway.app/api/health" target="_blank" rel="noopener">/api/health</a>.
-        </div>
-      </details>
-    </section>
-  </div>
-
-  <script>
-    // --- HARD-WIRED BACKEND ---
-    const API_BASE = "https://emailserverbackend-production.up.railway.app";
-
-    // --- Cookie helpers (token only) ---
-    const TOKEN_COOKIE = "refnull_token";
-    function setCookie(name, value, minutes) {
-      const d = new Date(Date.now() + minutes * 60_000);
-      document.cookie = `${name}=${encodeURIComponent(value)}; expires=${d.toUTCString()}; path=/; SameSite=Lax; Secure`;
-    }
-    function getCookie(name) {
-      const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[-[\\]{}()*+?.,\\\\^$|#\\s]/g, '\\$&') + '=([^;]*)'));
-      return m ? decodeURIComponent(m[1]) : null;
-    }
-    function delCookie(name) {
-      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/; SameSite=Lax; Secure`;
-    }
-
-    // --- UI Refs ---
-    const sel = q => document.querySelector(q);
-    const loginCard = sel("#loginCard");
-    const inboxCard = sel("#inboxCard");
-    const messageCard = sel("#messageCard");
-    const composeCard = sel("#composeCard");
-    const listEl = sel("#list");
-    const messagePre = sel("#messagePre");
-    const loginAs = sel("#loginAs");
-    const healthDot = sel("#healthDot");
-    const healthText = sel("#healthText");
-    const originEl = sel("#origin");
-    const apiBaseEl = sel("#apiBase");
-    const cookieStateEl = sel("#cookieState");
-    const diagOut = sel("#diagOut");
-    const userInput = sel("#username");
-    const passInput = sel("#password");
-    const loginForm = sel("#loginForm");
-
-    let token = null;
-    let authedUser = null;
-
-    originEl.textContent = location.origin;
-    apiBaseEl.textContent = API_BASE;
-    cookieStateEl.textContent = getCookie(TOKEN_COOKIE) ? "present" : "absent";
-
-    // Health check (XHR; requires CORS to be correct)
-    (async function health() {
-      try {
-        const r = await fetch(`${API_BASE}/api/health`, { cache: "no-store" });
-        const ok = r.ok;
-        const text = await r.text().catch(()=>"");
-        healthDot.classList.add(ok ? "ok" : "warn");
-        healthText.textContent = ok ? "backend reachable" : `health HTTP ${r.status}`;
-        if (!ok && text) healthText.textContent += ` · ${text.slice(0,80)}`;
-      } catch {
-        healthDot.classList.add("err");
-        healthText.textContent = "backend unreachable";
-      }
-    })();
-
-    // Bootstrap from existing cookie (we only store token, not user)
-    (async function bootstrap() {
-      const t = getCookie(TOKEN_COOKIE);
-      if (!t) return;
-      token = t;
-      loginCard.classList.add("hidden");
-      inboxCard.classList.remove("hidden");
-      composeCard.classList.remove("hidden");
-      loginAs.textContent = "session active";
-      try { await refreshInbox(); } catch { forceLogout(); }
-    })();
-
-    // Auth
-    loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      try {
-        const username = (userInput.value || "").trim();
-        const password = (passInput.value || "");
-        if (!username || !password) throw new Error("username and password required");
-
-        const r = await fetch(`${API_BASE}/api/login`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ username, password })
-        });
-        const j = await r.json().catch(()=>({}));
-        if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
-
-        token = j.token;
-        setCookie(TOKEN_COOKIE, token, Math.max(1, Number(j.ttlMinutes || 30)));
-        authedUser = username.includes("@") ? username : `${username}@refnull.net`;
-        passInput.value = ""; // never store
-
-        loginCard.classList.add("hidden");
-        inboxCard.classList.remove("hidden");
-        composeCard.classList.remove("hidden");
-        loginAs.textContent = `logged in as ${authedUser}`;
-        cookieStateEl.textContent = "present";
-
-        await refreshInbox();
-      } catch (err) {
-        alert("Sign-in failed: " + err.message + "\nIf it says 'Failed to fetch', verify CORS and API_BASE.");
-      }
-    });
-
-    // Inbox
-    async function refreshInbox() {
-      if (!token) throw new Error("no session");
-      messageCard.classList.add("hidden");
-      listEl.innerHTML = "<li class='muted'>Loading…</li>";
-      const r = await fetch(`${API_BASE}/api/messages?limit=25`, {
-        headers: { authorization: `Bearer ${token}` }
-      });
-      const j = await r.json().catch(()=>({}));
-      if (!r.ok) {
-        if (r.status === 401) { alert("Session expired. Please sign in again."); forceLogout(); return; }
-        throw new Error(j.error || `HTTP ${r.status}`);
-      }
-      if (!j.messages?.length) { listEl.innerHTML = "<li class='muted'>No messages</li>"; return; }
-      listEl.innerHTML = "";
-      j.messages.forEach(m => {
-        const when = m.date ? new Date(m.date).toLocaleString() : "";
-        const li = document.createElement("li");
-        li.innerHTML = `<strong>${escapeHtml(m.subject || "(no subject)")}</strong><br><span class="muted">${when} — ${escapeHtml(m.from || "")}</span>`;
-        li.onclick = () => openMessage(m.uid);
-        listEl.appendChild(li);
-      });
-    }
-
-    async function openMessage(uid) {
-      if (!token) return;
-      const r = await fetch(`${API_BASE}/api/messages/${uid}`, {
-        headers: { authorization: `Bearer ${token}` }
-      });
-      const j = await r.json().catch(()=>({}));
-      if (!r.ok) {
-        if (r.status === 401) { alert("Session expired."); forceLogout(); return; }
-        alert(j.error || `HTTP ${r.status}`);
-        return;
-      }
-      messagePre.textContent = j.text || "(no body)";
-      messageCard.classList.remove("hidden");
-      messagePre.scrollIntoView({ behavior: "smooth" });
-    }
-
-    sel("#refreshBtn").onclick = refreshInbox;
-    sel("#closeMsgBtn").onclick = () => messageCard.classList.add("hidden");
-
-    // Logout
-    sel("#logoutBtn").onclick = async () => {
-      try {
-        if (token) await fetch(`${API_BASE}/api/logout`, { method:"POST", headers:{ authorization:`Bearer ${token}` }});
-      } catch {}
-      forceLogout();
-    };
-    function forceLogout() {
-      delCookie(TOKEN_COOKIE);
-      token = null; authedUser = null;
-      loginCard.classList.remove("hidden");
-      inboxCard.classList.add("hidden");
-      messageCard.classList.add("hidden");
-      composeCard.classList.add("hidden");
-      cookieStateEl.textContent = "absent";
-    }
-
-    // Diagnostics
-    sel("#runDiag").onclick = async () => {
-      const logs = [];
-      const log = (m) => { logs.push(m); diagOut.textContent = logs.join("\n"); };
-      log(`Origin: ${location.origin}`);
-      log(`API_BASE: ${API_BASE}`);
-      try {
-        log("→ GET /api/health");
-        const r = await fetch(`${API_BASE}/api/health`, { method:"GET", cache:"no-store" });
-        const text = await r.text().catch(()=>"(no body)");
-        log(`← ${r.status} ${r.statusText}`);
-        log(text);
-        log("");
-        log("→ GET /api/probe");
-        const rp = await fetch(`${API_BASE}/api/probe`, { method:"GET", cache:"no-store" });
-        const t2 = await rp.text().catch(()=>"(no body)");
-        log(`← ${rp.status} ${rp.statusText}`);
-        log(t2);
-      } catch (e) {
-        log(`✖ fetch error: ${e?.message || e}`);
-        log("Likely CORS or backend URL. Open the links above directly in a new tab.");
-      }
-    };
-
-    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
-  </script>
+      <button id="submit" type="submit" class="btn">Continue</button>
+      <div class="small">Encrypted + auto-saved locally</div>
+      <div class="msg" id="msg"></div>
+    </form>
+  </main>
+  <script type="module" src="./auth.js"></script>
 </body>
 </html>
+
