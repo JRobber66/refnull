@@ -1,50 +1,50 @@
 // src/main.js
-import { loginPlainDirect, healthCheck } from "./api/homeAgent.js";
-import { getHomeAgentUrl } from "./config.js";
+import { loginPlainDirect } from './api/homeAgent.js';
+import { HOME_AGENT_URL } from './config.js';
 
-const form = document.getElementById("loginForm");
-const resultEl = document.getElementById("result");
-const diagEl = document.getElementById("diag");
+let diagEl = null;
+export function setDiagTarget(el) { diagEl = el; }
 
-(async () => {
-  console.log("[boot] HOME_AGENT_URL =", getHomeAgentUrl());
-  const h = await healthCheck();
-  console.log("[boot] health", h);
-})().catch(console.error);
-
-function show(obj) {
-  diagEl.textContent = JSON.stringify(obj, null, 2);
+function logDiag(obj) {
+  try {
+    if (diagEl) {
+      const now = new Date().toISOString();
+      diagEl.textContent = `${now}\n${JSON.stringify(obj, null, 2)}\n\n` + diagEl.textContent;
+    }
+  } catch {}
 }
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  resultEl.innerHTML = "";
-  diagEl.textContent = "";
+function showTopLine(line) {
+  logDiag({ info: line });
+}
 
-  const email = document.getElementById("email").value.trim();
-  const host = document.getElementById("imapHost").value.trim();
-  const port = Number(document.getElementById("imapPort").value);
-  const secure = document.getElementById("imapSecure").value === "true";
-  const password = document.getElementById("password").value;
+function bindForm() {
+  const f = document.getElementById('loginForm');
+  f?.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-  const res = await loginPlainDirect({ email, host, port, secure, password }, { timeoutMs: 15000 });
+    const email    = document.getElementById('email').value.trim();
+    const host     = document.getElementById('imapHost').value.trim();
+    const port     = Number(document.getElementById('imapPort').value.trim());
+    const secure   = document.getElementById('imapSecure').checked;
+    const password = document.getElementById('password').value;
 
-  // Surface both the high-level result and the verbose guts
-  if (res.ok) {
-    const payload = res.json || { text: res.text, status: res.status };
-    resultEl.innerHTML = `<div class="ok"><b>OK</b> — ${res.status}</div><pre>${escapeHtml(JSON.stringify(payload, null, 2))}</pre>`;
-  } else {
-    const head = `<div class="err"><b>FAILED</b> — ${res.status || res.error || "unknown"}</div>`;
-    const body = `<pre>${escapeHtml(JSON.stringify(res, null, 2))}</pre>`;
-    resultEl.innerHTML = head + body;
-  }
+    showTopLine(`Attempting login via ${HOME_AGENT_URL}/api/auth/login-plain`);
 
-  // Always dump complete diagnostics to the side panel
-  show(res);
+    const result = await loginPlainDirect({ email, host, port, secure, password });
+    logDiag({ result });
+
+    if (result?.ok) {
+      alert('Login OK\n\n' + JSON.stringify(result, null, 2));
+    } else {
+      alert('Login FAILED\n\n' + JSON.stringify(result, null, 2));
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    logDiag({ page: 'loaded', homeAgentUrl: HOME_AGENT_URL, pageProtocol: location.protocol });
+  }, 0);
+  bindForm();
 });
-
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
