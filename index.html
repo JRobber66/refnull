@@ -1,57 +1,67 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Direct Home-Agent Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="./styles.css" rel="stylesheet" />
-</head>
-<body>
-  <div class="container">
-    <h1>Direct Login to Home Agent</h1>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mail Portal</title>
+<style>
+  body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:#0b0c10;color:#e6e6e6;display:grid;place-items:center;min-height:100dvh}
+  .card{max-width:560px;width:92%;background:#151821;padding:20px;border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+  h1{margin:0 0 8px}
+  .muted{color:#9aa4b2;font-size:14px}
+  a.btn{display:block;text-align:center;margin:10px 0;padding:12px 14px;background:#7cc4ff;color:#071018;border-radius:12px;font-weight:700;text-decoration:none}
+  a.btn.secondary{background:#2a2f3a;color:#e6e6e6}
+  pre{white-space:pre-wrap;background:#0f121a;padding:10px;border-radius:12px;max-height:40vh;overflow:auto;font-size:12px}
+</style>
 
-    <div class="box">
-      <form id="loginForm">
-        <div class="row">
-          <label>Email</label>
-          <input id="email" type="email" placeholder="you@example.com" required />
-        </div>
-
-        <div class="row two">
-          <div>
-            <label>IMAP Host</label>
-            <input id="imapHost" type="text" value="127.0.0.1" required />
-          </div>
-          <div>
-            <label>Port</label>
-            <input id="imapPort" type="number" value="993" required />
-          </div>
-          <div class="checkbox">
-            <label><input id="imapSecure" type="checkbox" checked /> Secure (TLS)</label>
-          </div>
-        </div>
-
-        <div class="row">
-          <label>Password</label>
-          <input id="password" type="password" placeholder="••••••••" required />
-        </div>
-
-        <div class="row">
-          <button type="submit">Login</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="box">
-      <h2>Diagnostics</h2>
-      <pre id="diag" class="mono"></pre>
-    </div>
+<div class="card">
+  <h1>Mail Portal</h1>
+  <div class="muted" id="hint">Loading…</div>
+  <div id="links" style="margin-top:12px;display:none">
+    <a class="btn" id="lnkLogin"   href="#">Open Login</a>
+    <a class="btn" id="lnkInbox"   href="#">Open Inbox</a>
+    <a class="btn" id="lnkCompose" href="#">Open Composer</a>
+    <a class="btn secondary" id="lnkHealth" href="#" target="_blank">/health</a>
   </div>
+  <h3 style="margin:16px 0 6px">Diag</h3>
+  <pre id="log"></pre>
+</div>
 
-  <script type="module">
-    import { setDiagTarget } from './src/main.js';
-    setDiagTarget(document.getElementById('diag'));
-  </script>
-  <script type="module" src="./src/main.js"></script>
-</body>
-</html>
+<script>
+  // Put your home-agent base URL here (must be reachable from the browser)
+  const home = "http://98.156.77.218:31001"; // or "http://192.168.1.58:31001" on LAN
+
+  const log = (...x)=>{ const el=document.getElementById('log'); el.textContent+=x.map(v=>typeof v==='string'?v:JSON.stringify(v)).join(" ")+"\n"; el.scrollTop=el.scrollHeight; };
+
+  function setLinks() {
+    document.getElementById('lnkLogin').href   = home + "/index.html";
+    document.getElementById('lnkInbox').href   = home + "/inbox.html";
+    document.getElementById('lnkCompose').href = home + "/compose.html";
+    document.getElementById('lnkHealth').href  = home + "/health";
+    document.getElementById('links').style.display = "";
+  }
+
+  (async ()=>{
+    const hint = document.getElementById('hint');
+    const isHttpsPage = location.protocol === "https:";
+    const isHomeHttp  = home.startsWith("http://");
+
+    if (isHttpsPage && isHomeHttp) {
+      hint.textContent = "This page is HTTPS, target is HTTP. Most browsers block mixed content. Either serve your home-agent with HTTPS or open this page over HTTP.";
+      log("Mixed-content warning:", {pageProtocol: location.protocol, home});
+    } else {
+      hint.textContent = "Ready";
+    }
+
+    try {
+      log("GET", home + "/health");
+      const r = await fetch(home + "/health", { mode: "cors" });
+      const j = await r.json();
+      log("health:", j);
+      hint.textContent = j.ok ? `OK • ${j.host}` : "Health failed";
+    } catch (e) {
+      hint.textContent = "Health fetch failed (CORS or reachability)";
+      log("health error:", e.name, e.message);
+    }
+
+    setLinks();
+  })();
+</script>
