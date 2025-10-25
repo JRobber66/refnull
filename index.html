@@ -1,284 +1,58 @@
-<!doctype html>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Home-Agent Minimal Client</title>
-<style>
-  :root{
-    --bg:#0b0c10;--card:#141924;--fg:#e6e6e6;--muted:#9aa4b2;--acc:#79c2ff;--bad:#ff6b6b;--ok:#7dffaa
-  }
-  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,Segoe UI,Roboto,Arial}
-  .wrap{max-width:900px;margin:0 auto;padding:14px}
-  h1{margin:8px 0;font-size:22px}
-  h3{margin:18px 0 6px 0}
-  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  input,button,select,textarea{padding:10px;border-radius:10px;border:0;background:var(--card);color:var(--fg);outline:none}
-  input,select,textarea{min-width:200px}
-  button{background:var(--acc);color:#071018;font-weight:700;cursor:pointer}
-  .btns button{min-width:110px}
-  .card{background:var(--card);border-radius:12px;padding:12px;margin:10px 0}
-  .log{white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.35;max-height:45vh;overflow:auto}
-  .muted{color:var(--muted)}
-  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#22304a;color:#cfe6ff;font:700 11px/1 system-ui}
-  .bad{color:var(--bad)}
-  .ok{color:var(--ok)}
-  .w100{width:100%}
-  .grid{display:grid;grid-template-columns:1fr;gap:10px}
-  @media(min-width:720px){ .grid{grid-template-columns:1fr 1fr} }
-  .thin{min-width:120px}
-</style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Refnull Mail Agent</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #111;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    input, button {
+      margin: 5px;
+      padding: 8px;
+      background: #222;
+      border: 1px solid #555;
+      color: #eee;
+      width: 90%;
+      max-width: 400px;
+    }
+    button:hover { background: #333; cursor: pointer; }
+    pre { max-width: 90%; white-space: pre-wrap; background: #000; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h2>📬 Refnull Mail Agent</h2>
+  <input id="email" type="text" value="DanielOelke@evilgato.org" placeholder="Email">
+  <input id="pass" type="password" value="x<3Punky0623x" placeholder="Password">
+  <button id="loginBtn">Login & List INBOX</button>
+  <pre id="output">Ready</pre>
 
-<div class="wrap">
-  <h1>Home-Agent Minimal Client <span class="pill">single file</span></h1>
+  <script>
+    const HOME = "https://agent.refnull.net";
 
-  <div class="card">
-    <div class="row">
-      <input id="agent" class="w100" placeholder="Agent URL e.g. http://192.168.1.58:31001 or base64 string">
-      <label class="muted"><input id="isB64" type="checkbox"> b64</label>
-      <button id="save">save</button>
-      <button id="health">health</button>
-    </div>
-    <div id="mixWarn" class="muted" style="margin-top:6px;"></div>
-  </div>
+    async function testLogin() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("pass").value;
+      const out = document.getElementById("output");
 
-  <div class="card">
-    <div class="row">
-      <input id="email" placeholder="email" value="">
-      <input id="pass" type="password" placeholder="password">
-      <label class="muted"><input id="insecure" type="checkbox"> insecureTls (testing/self-signed)</label>
-      <button id="login">login</button>
-      <span id="loginStat" class="muted"></span>
-    </div>
-  </div>
+      out.textContent = "Connecting...";
+      try {
+        const res = await fetch(`${HOME}/api/imap/list?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&mailbox=INBOX`);
+        const data = await res.json();
+        out.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        out.textContent = "Error: " + err;
+      }
+    }
 
-  <div class="grid">
-    <div class="card">
-      <h3>List inbox</h3>
-      <div class="row">
-        <input id="mailbox" value="INBOX" class="thin">
-        <input id="page" type="number" value="1" min="1" class="thin">
-        <button id="list">list</button>
-      </div>
-      <div id="listOut" class="log"></div>
-    </div>
-
-    <div class="card">
-      <h3>Read (get)</h3>
-      <div class="row">
-        <input id="uid" type="number" placeholder="UID e.g. 1" class="thin">
-        <select id="format" class="thin">
-          <option value="text">text</option>
-          <option value="html">html</option>
-          <option value="raw">raw</option>
-        </select>
-        <button id="get">get</button>
-      </div>
-      <div id="getOut" class="log"></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3>Send</h3>
-    <div class="row">
-      <select id="sendMode" class="thin">
-        <option value="smtp">smtp</option>
-        <option value="file">file</option>
-      </select>
-      <input id="from" placeholder="from">
-      <input id="to" placeholder="to (comma ok)">
-      <input id="subject" placeholder="subject">
-    </div>
-    <div class="row">
-      <textarea id="body" class="w100" rows="4" placeholder="plain text"></textarea>
-    </div>
-    <div class="row" id="smtpRow">
-      <input id="smtpHost" placeholder="smtp host (e.g. 192.168.1.58 or mail.evilgato.org)">
-      <input id="smtpPort" placeholder="587 or 465" value="587" class="thin">
-      <label class="muted"><input id="smtpSecure" type="checkbox"> SMTPS (465)</label>
-      <input id="smtpUser" placeholder="smtp username">
-      <input id="smtpPass" type="password" placeholder="smtp password">
-      <label class="muted"><input id="smtpInsecure" type="checkbox"> insecureTls</label>
-    </div>
-    <div class="row">
-      <button id="send">send</button>
-    </div>
-    <div id="sendOut" class="log"></div>
-  </div>
-
-  <div class="card">
-    <h3>Console</h3>
-    <div id="log" class="log"></div>
-  </div>
-</div>
-
-<script>
-const $ = s => document.querySelector(s);
-const logEl = $("#log");
-
-// load saved
-(function init(){
-  const s = JSON.parse(localStorage.getItem("cfg")||"{}");
-  if (s.agent) $("#agent").value = s.agent;
-  if (s.isB64) $("#isB64").checked = true;
-  if (s.email) $("#email").value = s.email;
-  if (s.smtpHost) $("#smtpHost").value = s.smtpHost;
-  if (s.smtpPort) $("#smtpPort").value = s.smtpPort;
-  if (s.smtpSecure) $("#smtpSecure").checked = true;
-  if (s.smtpUser) $("#smtpUser").value = s.smtpUser;
-  if (s.smtpInsecure) $("#smtpInsecure").checked = true;
-  mixWarn();
-})();
-
-function saveCfg(){
-  const cfg = {
-    agent: $("#agent").value.trim(),
-    isB64: $("#isB64").checked,
-    email: $("#email").value.trim(),
-    smtpHost: $("#smtpHost").value.trim(),
-    smtpPort: $("#smtpPort").value.trim(),
-    smtpSecure: $("#smtpSecure").checked,
-    smtpUser: $("#smtpUser").value.trim(),
-    smtpInsecure: $("#smtpInsecure").checked
-  };
-  localStorage.setItem("cfg", JSON.stringify(cfg));
-  toast("saved settings");
-}
-
-function b64MaybeDecode(s){
-  if (!$("#isB64").checked) return s;
-  try {
-    const t = atob(s.trim());
-    return t || s;
-  } catch { return s; }
-}
-
-function agentBase(){
-  const raw = $("#agent").value.trim();
-  const u = b64MaybeDecode(raw);
-  return u.replace(/\/+$/,''); // strip trailing slash
-}
-
-function toast(msg){ log(`[info] ${msg}`) }
-function log(obj){
-  const t = (typeof obj === "string") ? obj : JSON.stringify(obj, null, 2);
-  const when = new Date().toISOString();
-  logEl.textContent = `${when}\n${t}\n\n` + logEl.textContent;
-}
-
-function mixWarn(){
-  const pageProto = location.protocol;
-  const u = b64MaybeDecode($("#agent").value.trim()||"");
-  const warn = $("#mixWarn");
-  if (pageProto === "https:" && /^http:\/\//i.test(u)){
-    warn.innerHTML = `<span class="bad">⚠ mixed content:</span> this page is HTTPS but agent is HTTP. Browser will block requests. Open this file locally (file://) or serve page over HTTP, or put an HTTPS proxy in front of your agent.`;
-  } else {
-    warn.textContent = "";
-  }
-}
-
-/* -------- API helpers -------- */
-async function call(path, opt){
-  const base = agentBase();
-  const url = base + path;
-  log({fetch:{url, method: opt?.method||"GET"}});
-  const r = await fetch(url, {
-    method: opt?.method||"GET",
-    headers: { "content-type":"application/json" },
-    body: opt?.body ? JSON.stringify(opt.body) : undefined
-  });
-  let out;
-  try { out = await r.json(); } catch { out = { ok:false, error:"NON_JSON", status:r.status }; }
-  log({status:r.status, json: out});
-  if (!r.ok) throw new Error(out?.error || `HTTP ${r.status}`);
-  return out;
-}
-
-/* -------- buttons -------- */
-$("#save").onclick = ()=>{ saveCfg(); mixWarn(); };
-
-$("#health").onclick = async ()=>{
-  try {
-    const j = await call("/health");
-    toast(j.ok ? `health ok on ${j.host}` : "health not ok");
-  } catch(e){ toast("health failed: "+e.message); }
-};
-
-$("#login").onclick = async ()=>{
-  const email = $("#email").value.trim();
-  const password = $("#pass").value;
-  const insecureTls = $("#insecure").checked;
-  if (!email || !password){ $("#loginStat").textContent = "missing email/password"; return; }
-  $("#loginStat").textContent = "logging in…";
-  try {
-    // accepts POST (alias) on your agent
-    const j = await call("/api/auth/login-plain", { method:"POST", body:{ email, password, insecureTls }});
-    $("#loginStat").innerHTML = j.ok
-      ? `✅ ${j.server||j.host||"logged in"} (${j.elapsedMs||"?"}ms)`
-      : `❌ ${j.error||"login failed"}`;
-    saveCfg();
-  } catch(e){
-    $("#loginStat").textContent = "login error: "+e.message;
-  }
-};
-
-$("#list").onclick = async ()=>{
-  const email = $("#email").value.trim();
-  const password = $("#pass").value;
-  const mailbox = $("#mailbox").value || "INBOX";
-  const page = Number($("#page").value||1);
-  const insecureTls = $("#insecure").checked;
-  const q = new URLSearchParams({
-    email, password, mailbox, page, insecureTls
-  });
-  try{
-    const j = await call("/api/imap/list?"+q.toString());
-    $("#listOut").textContent = JSON.stringify(j, null, 2);
-  }catch(e){
-    $("#listOut").textContent = "list error: "+e.message;
-  }
-};
-
-$("#get").onclick = async ()=>{
-  const email = $("#email").value.trim();
-  const password = $("#pass").value;
-  const mailbox = $("#mailbox").value || "INBOX";
-  const uid = $("#uid").value;
-  const format = $("#format").value;
-  const insecureTls = $("#insecure").checked;
-  const q = new URLSearchParams({ email,password,mailbox,uid,format,insecureTls });
-  try{
-    const j = await call("/api/imap/get?"+q.toString());
-    $("#getOut").textContent = JSON.stringify(j, null, 2);
-  }catch(e){
-    $("#getOut").textContent = "get error: "+e.message;
-  }
-};
-
-$("#sendMode").onchange = ()=>{ $("#smtpRow").style.display = ($("#sendMode").value==="smtp")?"flex":"none"; };
-$("#smtpRow").style.display = ($("#sendMode").value==="smtp")?"flex":"none";
-
-$("#send").onclick = async ()=>{
-  const mode = $("#sendMode").value;
-  const from = $("#from").value.trim();
-  const to = $("#to").value.trim();
-  const subject = $("#subject").value;
-  const text = $("#body").value;
-
-  let body = { mode, from, to, subject, text };
-
-  if (mode === "smtp"){
-    body.smtpHost = $("#smtpHost").value.trim();
-    body.smtpPort = Number($("#smtpPort").value||587);
-    body.smtpSecure = $("#smtpSecure").checked;
-    body.username = $("#smtpUser").value.trim();
-    body.password = $("#smtpPass").value;
-    body.insecureTls = $("#smtpInsecure").checked;
-  }
-
-  try{
-    const j = await call("/api/smtp/send", { method:"POST", body });
-    $("#sendOut").textContent = JSON.stringify(j, null, 2);
-  }catch(e){
-    $("#sendOut").textContent = "send error: "+e.message;
-  }
-};
-</script>
+    document.getElementById("loginBtn").onclick = testLogin;
+  </script>
+</body>
+</html>
