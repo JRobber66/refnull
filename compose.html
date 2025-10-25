@@ -1,0 +1,144 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mail — Compose</title>
+<style>
+  body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:16px;max-width:720px}
+  header a{margin-right:10px}
+  label{display:block;margin:10px 0 6px}
+  input,textarea,button{font:inherit}
+  input[type=text],input[type=email]{width:100%;padding:.6rem;border:1px solid #ccc;border-radius:.5rem}
+  textarea{width:100%;min-height:160px;padding:.6rem;border:1px solid #ccc;border-radius:.5rem}
+  button{padding:.6rem 1rem;border:1px solid #ccc;border-radius:.6rem;background:#111;color:#fff}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .muted{color:#666;font-size:.9rem}
+  pre{background:#0f172a;color:#e2e8f0;padding:10px;border-radius:8px;overflow:auto}
+</style>
+
+<header>
+  <a href="index.html">Login</a>
+  <a href="inbox.html">Inbox</a>
+  <a href="compose.html"><b>Compose</b></a>
+</header>
+
+<section>
+  <label>Agent</label>
+  <input id="agent" type="text" placeholder="https://agent.refnull.net" />
+
+  <label>From</label>
+  <input id="from" type="email" placeholder="you@evilgato.org" />
+
+  <label>To</label>
+  <input id="to" type="text" placeholder="addr1@example.com, addr2@example.com" />
+
+  <div class="row">
+    <div>
+      <label>Subject</label>
+      <input id="subject" type="text" />
+    </div>
+    <div>
+      <label class="muted"><input id="fileMode" type="checkbox" /> Save as .eml (no SMTP)</label>
+    </div>
+  </div>
+
+  <label>Text</label>
+  <textarea id="text"></textarea>
+
+  <h3>SMTP (optional)</h3>
+  <div class="row">
+    <div>
+      <label>SMTP Host</label>
+      <input id="smtpHost" type="text" value="mail.evilgato.org" />
+    </div>
+    <div>
+      <label>SMTP Port</label>
+      <input id="smtpPort" type="text" value="587" />
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label class="muted"><input id="smtpSecure" type="checkbox" /> SMTPS (465). Leave off for STARTTLS (587)</label>
+    </div>
+    <div>
+      <label class="muted"><input id="insecureTls" type="checkbox" /> Allow insecure TLS (testing)</label>
+    </div>
+  </div>
+
+  <div class="row">
+    <div>
+      <label>SMTP Username (optional)</label>
+      <input id="username" type="text" />
+    </div>
+    <div>
+      <label>SMTP Password (optional)</label>
+      <input id="password" type="password" />
+    </div>
+  </div>
+
+  <p>
+    <button id="save">Save Agent</button>
+    <button id="send">Send</button>
+  </p>
+</section>
+
+<pre id="log"></pre>
+
+<script>
+const $ = (id)=>document.getElementById(id);
+const log=(o)=>{$('log').textContent += JSON.stringify(o,null,2)+"\n\n";};
+function resolveAgent(){
+  const qp=new URLSearchParams(location.search);
+  const p=qp.get('agent'); if(p){localStorage.setItem('agent',p); return p;}
+  return localStorage.getItem('agent') || 'https://agent.refnull.net';
+}
+function agent(){ return $('agent').value.trim() || resolveAgent(); }
+
+window.addEventListener('DOMContentLoaded',()=>{
+  $('agent').value = resolveAgent();
+  $('from').value = localStorage.getItem('email') || '';
+});
+
+$('save').onclick = ()=>{
+  const a = agent();
+  localStorage.setItem('agent', a);
+  log({savedAgent:a});
+  alert('Saved agent: ' + a);
+};
+
+$('send').onclick = async ()=>{
+  const a = agent();
+  const body = {
+    from: $('from').value.trim(),
+    to: $('to').value.split(',').map(s=>s.trim()).filter(Boolean),
+    subject: $('subject').value,
+    text: $('text').value
+  };
+  if ($('fileMode').checked) {
+    body.mode = 'file';
+  } else {
+    body.smtpHost   = $('smtpHost').value.trim();
+    body.smtpPort   = Number($('smtpPort').value || 587);
+    body.smtpSecure = $('smtpSecure').checked;
+    body.insecureTls = $('insecureTls').checked;
+    if ($('username').value) body.username = $('username').value;
+    if ($('password').value) body.password = $('password').value;
+  }
+
+  try{
+    log({fetch:{url:a+'/api/smtp/send',method:'POST'}, body});
+    const r = await fetch(a + '/api/smtp/send', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body),
+      mode:'cors'
+    });
+    const j = await r.json();
+    log({status:r.status,json:j});
+    if (j.ok) alert('Sent!');
+    else alert('Send failed: ' + (j.error || r.status));
+  }catch(e){
+    log({error:e.name,message:e.message});
+    alert('Fetch error: ' + e.message);
+  }
+};
+</script>
