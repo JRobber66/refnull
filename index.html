@@ -4,58 +4,54 @@
   <meta charset="utf-8" />
   <title>Direct Home-Agent Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body { font-family: system-ui, sans-serif; margin: 24px; }
-    form { display: grid; gap: 8px; max-width: 520px; }
-    input, button, select { padding: 10px; font-size: 16px; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    pre { background: #111; color: #e6e6e6; padding: 12px; overflow:auto; border-radius: 8px; }
-    .muted { color: #666; font-size: 13px; }
-    .ok { color: #0a0; }
-    .err { color: #a00; }
-  </style>
+  <link href="./styles.css" rel="stylesheet" />
 </head>
 <body>
-  <h1>Home-Agent Login (Direct)</h1>
-  <p class="muted">
-    Heads-up: if this page is served over <b>HTTPS</b> and your home-agent is <b>HTTP</b>, the browser will block requests
-    (mixed content). For quick testing, open this file locally or serve both over HTTP, or give your home-agent HTTPS.
-  </p>
+  <div class="container">
+    <h1>Direct Login to Home Agent</h1>
 
-  <form id="loginForm">
-    <label>Email
-      <input id="email" type="email" placeholder="user@example.com" required />
-    </label>
+    <div class="box">
+      <form id="loginForm">
+        <div class="row">
+          <label>Email</label>
+          <input id="email" type="email" placeholder="you@example.com" required />
+        </div>
 
-    <div class="row">
-      <label>IMAP host
-        <input id="imapHost" type="text" placeholder="127.0.0.1" value="127.0.0.1" required />
-      </label>
-      <label>Port
-        <input id="imapPort" type="number" placeholder="993" value="993" required />
-      </label>
+        <div class="row two">
+          <div>
+            <label>IMAP Host</label>
+            <input id="imapHost" type="text" value="127.0.0.1" required />
+          </div>
+          <div>
+            <label>Port</label>
+            <input id="imapPort" type="number" value="993" required />
+          </div>
+          <div class="checkbox">
+            <label><input id="imapSecure" type="checkbox" checked /> Secure (TLS)</label>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>Password</label>
+          <input id="password" type="password" placeholder="••••••••" required />
+        </div>
+
+        <div class="row">
+          <button type="submit">Login</button>
+        </div>
+      </form>
     </div>
 
-    <label>Use TLS/SSL?
-      <select id="imapSecure">
-        <option value="true" selected>true</option>
-        <option value="false">false</option>
-      </select>
-    </label>
+    <div class="box">
+      <h2>Diagnostics</h2>
+      <pre id="diag" class="mono"></pre>
+    </div>
+  </div>
 
-    <label>Password
-      <input id="password" type="password" required />
-    </label>
-
-    <button type="submit">Login (POST → home-agent)</button>
-  </form>
-
-  <h2>Result</h2>
-  <div id="result"></div>
-
-  <h2>Diagnostics</h2>
-  <pre id="diag"></pre>
-
+  <script type="module">
+    import { setDiagTarget } from './src/main.js';
+    setDiagTarget(document.getElementById('diag'));
+  </script>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
