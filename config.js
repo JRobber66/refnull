@@ -1,6 +1,6 @@
 // frontend/config.js
 const ALLOWLIST = new Set([
-  'https://<your-gh-username>.github.io',
+  'https://jrobber66.github.io',
   'https://agent.refnull.net', // agent origin itself (if you ever host UI there)
 ]);
 // Your agent base (MUST be HTTPS in production).
