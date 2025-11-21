@@ -21,14 +21,21 @@ progress { width: 100%; }
 <script>
 const API_BASE = "https://filebackend-production-746d.up.railway.app";
 const urlParams = new URLSearchParams(window.location.search);
-const token = urlParams.get('token');
+let token = urlParams.get('token');
 
 async function uploadFile() {
-  if(!token) { alert("Login first"); return; }
   const file = document.getElementById("fileInput").files[0];
   if(!file) return alert("Select a file");
 
-  const CHUNK_SIZE = 50*1024*1024;
+  const ONE_GB = 1024 * 1024 * 1024;
+
+  if(file.size > ONE_GB && !token) {
+    // Redirect to sign-in if >1GB
+    window.location.href = "signin.html?redirect=upload.html";
+    return;
+  }
+
+  const CHUNK_SIZE = 50*1024*1024; // 50MB chunks
   const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
   for(let i=0; i<totalChunks; i++) {
@@ -42,9 +49,11 @@ async function uploadFile() {
     formData.append("chunkIndex", i);
     formData.append("totalChunks", totalChunks);
 
+    const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
     const res = await fetch(`${API_BASE}/upload`, {
       method: "POST",
-      headers: { "Authorization": `Bearer ${token}` },
+      headers,
       body: formData
     });
     const data = await res.json();
