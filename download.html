@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Download</title>
+<style>
+body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; }
+input, button { display: block; margin: 1rem 0; width: 100%; }
+</style>
+</head>
+<body>
+<h1>Download File</h1>
+<input type="text" id="fileName" placeholder="Enter file name">
+<button onclick="downloadFile()">Download</button>
+<p id="status"></p>
+
+<script>
+const API_BASE = "https://filebackend-production-746d.up.railway.app";
+const urlParams = new URLSearchParams(window.location.search);
+const token = urlParams.get('token');
+
+function downloadFile() {
+  if(!token) { alert("Login first"); return; }
+  const fileName = document.getElementById("fileName").value;
+  if(!fileName) return alert("Enter a file name");
+
+  const link = document.createElement("a");
+  link.href = `${API_BASE}/download/${fileName}`;
+  link.target = "_blank";
+  link.click();
+  document.getElementById("status").innerText = "Download initiated";
+}
+</script>
+</body>
+</html>
