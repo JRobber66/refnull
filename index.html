@@ -61,18 +61,12 @@
 
 <script>
 function goUpload() {
-  const file = prompt("Enter file size in MB to simulate your upload:");
-  if (!file) return;
-  if (parseInt(file) > 1024) {
-    window.location.href = "signin.html?redirect=upload.html";
-  } else {
-    window.location.href = "upload.html";
-  }
+  window.location.href = "upload.html";
 }
-
 function goDownload() {
   window.location.href = "download.html";
 }
 </script>
+
 </body>
 </html>
