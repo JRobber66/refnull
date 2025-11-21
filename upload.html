@@ -5,65 +5,165 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Upload</title>
 <style>
-body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; }
-input, button { display: block; margin: 1rem 0; width: 100%; }
-progress { width: 100%; }
+body { font-family: sans-serif; margin:0; padding:0; display:flex; flex-direction:column; align-items:center; min-height:100vh; background:#f0f0f0; }
+
+h1 { margin-top:2rem; }
+
+#signin {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(255,255,255,0.9);
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  z-index: 10;
+  width: 200px;
+}
+#signin input { display:block; margin:0.25rem 0; width:100%; padding:0.25rem; }
+#signin button { width: 100%; margin-top: 0.25rem; }
+
+#dropArea {
+  margin-top: 4rem;
+  width: 80%;
+  max-width: 600px;
+  height: 300px;
+  border: 2px dashed #4CAF50;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: white;
+  color: #333;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+#dropArea.hover { background:#e0ffe0; border-color:#45a049; }
+
+progress { width:80%; max-width:600px; margin-top:1rem; }
+#status, #downloadCode { margin-top:1rem; font-weight:bold; }
 </style>
 </head>
 <body>
-<h1>Upload File</h1>
-<input type="file" id="fileInput">
-<button onclick="uploadFile()">Upload</button>
+
+<!-- Sign-in corner -->
+<div id="signin">
+  <h4>Sign In</h4>
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+  <button onclick="signup()">Signup</button>
+  <p id="signinStatus" style="color:red;"></p>
+</div>
+
+<h1>Drag & Drop File to Upload</h1>
+<div id="dropArea">Drop your file here or click to select</div>
+<input type="file" id="fileInput" style="display:none;">
 <progress id="progress" value="0" max="100"></progress>
 <p id="status"></p>
-<p id="downloadLink"></p>
+<p id="downloadCode"></p>
 
 <script>
 const API_BASE = "https://filebackend-production-746d.up.railway.app";
-const urlParams = new URLSearchParams(window.location.search);
-let token = urlParams.get('token');
+let token = null;
 
-async function uploadFile() {
-  const file = document.getElementById("fileInput").files[0];
-  if(!file) return alert("Select a file");
+// Sign-in logic
+async function signup() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+  const res = await fetch(`${API_BASE}/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  document.getElementById("signinStatus").innerText = data.error || "Signup successful!";
+}
 
-  const ONE_GB = 1024 * 1024 * 1024;
+async function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+  const res = await fetch(`${API_BASE}/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  if(data.token) {
+    token = data.token;
+    document.getElementById("signinStatus").innerText = "Logged in!";
+  } else {
+    document.getElementById("signinStatus").innerText = data.error || "Login failed";
+  }
+}
 
+// Drag & drop
+const dropArea = document.getElementById("dropArea");
+const fileInput = document.getElementById("fileInput");
+
+dropArea.addEventListener("click", () => fileInput.click());
+dropArea.addEventListener("dragover", e => { e.preventDefault(); dropArea.classList.add("hover"); });
+dropArea.addEventListener("dragleave", e => { e.preventDefault(); dropArea.classList.remove("hover"); });
+dropArea.addEventListener("drop", e => {
+  e.preventDefault();
+  dropArea.classList.remove("hover");
+  const file = e.dataTransfer.files[0];
+  if(file) uploadFile(file);
+});
+
+fileInput.addEventListener("change", () => {
+  const file = fileInput.files[0];
+  if(file) uploadFile(file);
+});
+
+async function uploadFile(file) {
+  const ONE_GB = 1024*1024*1024;
   if(file.size > ONE_GB && !token) {
-    // Redirect to sign-in if >1GB
-    window.location.href = "signin.html?redirect=upload.html";
+    alert("Please sign in to upload files larger than 1GB");
     return;
   }
 
-  const CHUNK_SIZE = 50*1024*1024; // 50MB chunks
+  const CHUNK_SIZE = 50*1024*1024;
   const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
-  for(let i=0; i<totalChunks; i++) {
+  document.getElementById("status").innerText = "Uploading...";
+  document.getElementById("progress").value = 0;
+  document.getElementById("downloadCode").innerText = "";
+
+  let downloadCode = null;
+
+  for(let i=0;i<totalChunks;i++){
     const start = i*CHUNK_SIZE;
-    const end = Math.min(start+CHUNK_SIZE, file.size);
-    const chunk = file.slice(start, end);
+    const end = Math.min(start+CHUNK_SIZE,file.size);
+    const chunk = file.slice(start,end);
 
     const formData = new FormData();
-    formData.append("chunk", chunk);
-    formData.append("fileName", file.name);
-    formData.append("chunkIndex", i);
-    formData.append("totalChunks", totalChunks);
+    formData.append("chunk",chunk);
+    formData.append("fileName",file.name);
+    formData.append("chunkIndex",i);
+    formData.append("totalChunks",totalChunks);
 
     const headers = token ? { "Authorization": `Bearer ${token}` } : {};
 
-    const res = await fetch(`${API_BASE}/upload`, {
-      method: "POST",
+    const res = await fetch(`${API_BASE}/upload`,{
+      method:"POST",
       headers,
       body: formData
     });
     const data = await res.json();
-    document.getElementById("status").innerText = data.message;
+    if(data.downloadCode) downloadCode = data.downloadCode;
     document.getElementById("progress").value = ((i+1)/totalChunks)*100;
   }
 
-  document.getElementById("downloadLink").innerHTML = `
-    File uploaded: <a href="${API_BASE}/download/${file.name}" target="_blank">Download Link</a>
-  `;
+  document.getElementById("status").innerText = "Upload complete!";
+  if(downloadCode){
+    document.getElementById("downloadCode").innerHTML = `
+      Download code: <strong>${downloadCode}</strong><br>
+      <a href="${API_BASE}/download/${downloadCode}" target="_blank">Download File</a>
+    `;
+  }
 }
 </script>
 </body>
