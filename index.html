@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Share</title>
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Sign-in corner */
+  #signin {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255,255,255,0.9);
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    z-index: 10;
+  }
+  #signin input {
+    display: block;
+    margin: 0.25rem 0;
+    width: 150px;
+  }
+  #signin button {
+    width: 100%;
+    margin-top: 0.25rem;
+  }
+
+  /* Split screen */
+  .split {
+    height: 100%;
+    width: 50%;
+    position: fixed;
+    top: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  #upload {
+    left: 0;
+    background: #4CAF50;
+  }
+  #upload:hover { background: #45a049; }
+
+  #download {
+    right: 0;
+    background: #2196F3;
+  }
+  #download:hover { background: #1976D2; }
+
+  .arrow {
+    font-size: 4rem;
+    margin-top: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<!-- Sign-in panel -->
+<div id="signin">
+  <h4>Sign In</h4>
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+  <button onclick="signup()">Signup</button>
+  <p id="signinStatus" style="color:red;"></p>
+</div>
+
+<!-- Split panels -->
+<div id="upload" class="split" onclick="goUpload()">
+  Upload
+  <div class="arrow">&#8593;</div>
+</div>
+<div id="download" class="split" onclick="goDownload()">
+  Download
+  <div class="arrow">&#8595;</div>
+</div>
+
+<script>
+let token = null;
+const API_BASE = "https://filebackend-production-746d.up.railway.app";
+
+// Signup
+async function signup() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+  const res = await fetch(`${API_BASE}/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  document.getElementById("signinStatus").innerText = data.error || "Signup successful!";
+}
+
+// Login
+async function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+  const res = await fetch(`${API_BASE}/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  if(data.token) {
+    token = data.token;
+    document.getElementById("signinStatus").innerText = "Logged in!";
+  } else {
+    document.getElementById("signinStatus").innerText = data.error || "Login failed";
+  }
+}
+
+// Navigate
+function goUpload() {
+  if(!token) { alert("Please login first"); return; }
+  window.location.href = "upload.html?token=" + encodeURIComponent(token);
+}
+function goDownload() {
+  if(!token) { alert("Please login first"); return; }
+  window.location.href = "download.html?token=" + encodeURIComponent(token);
+}
+</script>
+
+</body>
+</html>
