@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upload</title>
+<style>
+body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; }
+input, button { display: block; margin: 1rem 0; width: 100%; }
+progress { width: 100%; }
+</style>
+</head>
+<body>
+<h1>Upload File</h1>
+<input type="file" id="fileInput">
+<button onclick="uploadFile()">Upload</button>
+<progress id="progress" value="0" max="100"></progress>
+<p id="status"></p>
+<p id="downloadLink"></p>
+
+<script>
+const API_BASE = "https://filebackend-production-746d.up.railway.app";
+const urlParams = new URLSearchParams(window.location.search);
+const token = urlParams.get('token');
+
+async function uploadFile() {
+  if(!token) { alert("Login first"); return; }
+  const file = document.getElementById("fileInput").files[0];
+  if(!file) return alert("Select a file");
+
+  const CHUNK_SIZE = 50*1024*1024;
+  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+  for(let i=0; i<totalChunks; i++) {
+    const start = i*CHUNK_SIZE;
+    const end = Math.min(start+CHUNK_SIZE, file.size);
+    const chunk = file.slice(start, end);
+
+    const formData = new FormData();
+    formData.append("chunk", chunk);
+    formData.append("fileName", file.name);
+    formData.append("chunkIndex", i);
+    formData.append("totalChunks", totalChunks);
+
+    const res = await fetch(`${API_BASE}/upload`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}` },
+      body: formData
+    });
+    const data = await res.json();
+    document.getElementById("status").innerText = data.message;
+    document.getElementById("progress").value = ((i+1)/totalChunks)*100;
+  }
+
+  document.getElementById("downloadLink").innerHTML = `
+    File uploaded: <a href="${API_BASE}/download/${file.name}" target="_blank">Download Link</a>
+  `;
+}
+</script>
+</body>
+</html>
