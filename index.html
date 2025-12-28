@@ -1,72 +1,397 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>File Share</title>
-<style>
-  body, html {
-    margin: 0;
-    padding: 0;
-    font-family: sans-serif;
-    height: 100%;
-  }
-
-  .container {
-    display: flex;
-    flex-direction: row;
-    height: 100vh;
-  }
-
-  .panel {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    color: white;
-    font-size: 2rem;
-    cursor: pointer;
-    transition: background 0.3s;
-    text-align: center;
-  }
-
-  #upload { background: #4CAF50; }
-  #upload:hover { background: #45a049; }
-
-  #download { background: #2196F3; }
-  #download:hover { background: #1976D2; }
-
-  .arrow { font-size: 4rem; margin-top: 1rem; }
-
-  @media (max-width: 768px) {
-    .container { flex-direction: column; }
-    .panel { font-size: 1.5rem; }
-    .arrow { font-size: 3rem; }
-  }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Face Rater</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: #0b0d12; color: #e8ecf1;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 24px; }
+    .card {
+      background: #121624; border: 1px solid #232a3d; border-radius: 16px;
+      padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    .row { display: grid; grid-template-columns: 1.1fr .9fr; gap: 18px; }
+    @media (max-width: 860px) { .row { grid-template-columns: 1fr; } }
+    h1 { font-size: 20px; margin: 0 0 12px; font-weight: 700; }
+    .muted { color: #aab4c2; font-size: 13px; }
+    .url {
+      display: inline-flex; gap: 8px; align-items: center;
+      padding: 8px 10px; border-radius: 12px; border: 1px solid #232a3d;
+      background: #0f1320; font-size: 13px;
+      word-break: break-all;
+    }
+    .drop {
+      margin-top: 14px; border: 1px dashed #2c3650; border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      padding: 18px;
+    }
+    .drop.drag { border-color: #6aa3ff; box-shadow: 0 0 0 3px rgba(106,163,255,.12) inset; }
+    .btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+    button {
+      appearance: none; border: 1px solid #2c3650; background: #182036;
+      color: #e8ecf1; padding: 10px 12px; border-radius: 12px;
+      cursor: pointer; font-weight: 600;
+    }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    button.primary { border-color: #3a6fff; background: #2452ff; }
+    input[type="file"] { display: none; }
+    .preview {
+      width: 100%; aspect-ratio: 4/3; border-radius: 14px; overflow: hidden;
+      border: 1px solid #232a3d; background: #0f1320;
+      display: grid; place-items: center;
+    }
+    .preview img { width: 100%; height: 100%; object-fit: cover; display: none; }
+    .preview .ph { padding: 18px; text-align: center; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      border: 1px solid #232a3d; background: #0f1320;
+      border-radius: 999px; padding: 7px 10px; font-size: 13px;
+    }
+    .okdot { width: 8px; height: 8px; border-radius: 999px; background: #45d483; }
+    .baddot { width: 8px; height: 8px; border-radius: 999px; background: #ff5c5c; }
+    .score {
+      font-size: 44px; font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 4px;
+    }
+    .grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;
+    }
+    .kv { border: 1px solid #232a3d; background: #0f1320; border-radius: 14px; padding: 10px; }
+    .kv .k { color: #aab4c2; font-size: 12px; }
+    .kv .v { font-size: 16px; font-weight: 700; margin-top: 4px; }
+    .table {
+      margin-top: 12px; border: 1px solid #232a3d; border-radius: 14px; overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #1d2436; }
+    th { text-align: left; color: #aab4c2; background: #0f1320; font-weight: 700; }
+    tr:last-child td { border-bottom: none; }
+    .right { text-align: right; font-variant-numeric: tabular-nums; }
+    .status {
+      margin-top: 10px; padding: 10px 12px; border-radius: 14px;
+      border: 1px solid #232a3d; background: #0f1320; font-size: 13px;
+      white-space: pre-wrap;
+    }
+    .alert {
+      border-color: rgba(255, 219, 97, .35);
+      box-shadow: 0 0 0 3px rgba(255,219,97,.12) inset;
+      background: linear-gradient(180deg, rgba(255,219,97,.10), rgba(15,19,32,1));
+    }
+    .err {
+      border-color: rgba(255, 92, 92, .35);
+      box-shadow: 0 0 0 3px rgba(255,92,92,.10) inset;
+    }
+  </style>
 </head>
 <body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Face Rater Frontend</h1>
+      <div class="muted">Uploads an image to your Railway backend and displays the results.</div>
+      <div style="margin-top:10px" class="url">
+        <span class="muted">API:</span>
+        <span id="apiUrlText"></span>
+      </div>
+    </div>
 
-<div class="container">
-  <div id="upload" class="panel" onclick="goUpload()">
-    Upload
-    <div class="arrow">&#8593;</div>
+    <div style="height:16px"></div>
+
+    <div class="row">
+      <div class="card">
+        <div class="pill" id="healthPill"><span class="baddot"></span><span>Health: unchecked</span></div>
+
+        <div class="drop" id="dropZone">
+          <div class="muted">
+            Drag & drop an image here, or use “Choose file”.
+            <br/>Accepted: JPG / PNG / WEBP
+          </div>
+
+          <div class="btns">
+            <label for="fileInput">
+              <button type="button">Choose file</button>
+            </label>
+            <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp" />
+            <button class="primary" id="analyzeBtn" type="button" disabled>Analyze</button>
+            <button id="clearBtn" type="button" disabled>Clear</button>
+            <button id="healthBtn" type="button">Check health</button>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="preview" id="previewBox">
+          <img id="previewImg" alt="Preview" />
+          <div class="ph muted" id="previewPlaceholder">No image selected.</div>
+        </div>
+
+        <div class="status" id="clientStatus">Ready.</div>
+      </div>
+
+      <div class="card">
+        <div class="muted">Result</div>
+        <div class="score" id="overallScore">—</div>
+        <div class="muted" id="resultSubtitle">Upload an image to see scores.</div>
+
+        <div class="grid">
+          <div class="kv">
+            <div class="k">Face found</div>
+            <div class="v" id="faceFound">—</div>
+          </div>
+          <div class="kv">
+            <div class="k">Face confidence</div>
+            <div class="v" id="faceConf">—</div>
+          </div>
+          <div class="kv">
+            <div class="k">Known match</div>
+            <div class="v" id="knownMatch">—</div>
+          </div>
+          <div class="kv">
+            <div class="k">Match label</div>
+            <div class="v" id="matchLabel">—</div>
+          </div>
+        </div>
+
+        <div class="status" id="easterEggBox" style="display:none;"></div>
+
+        <div class="table" id="subscoresBox" style="display:none;">
+          <table>
+            <thead>
+              <tr><th>Subscore</th><th class="right">Value</th></tr>
+            </thead>
+            <tbody id="subscoresTbody"></tbody>
+          </table>
+        </div>
+
+        <div class="status err" id="errorBox" style="display:none;"></div>
+      </div>
+    </div>
   </div>
-  <div id="download" class="panel" onclick="goDownload()">
-    Download
-    <div class="arrow">&#8595;</div>
-  </div>
-</div>
 
 <script>
-function goUpload() {
-  window.location.href = "upload.html";
-}
-function goDownload() {
-  window.location.href = "download.html";
-}
-</script>
+(() => {
+  // --- Configure your deployed backend here ---
+  const API_BASE = "https://web-production-64f21.up.railway.app";
+  const HEALTH_URL = `${API_BASE}/health`;
+  const ANALYZE_URL = `${API_BASE}/analyze`;
 
+  const $ = (id) => document.getElementById(id);
+
+  $("apiUrlText").textContent = API_BASE;
+
+  const dropZone = $("dropZone");
+  const fileInput = $("fileInput");
+  const analyzeBtn = $("analyzeBtn");
+  const clearBtn = $("clearBtn");
+  const healthBtn = $("healthBtn");
+
+  const previewImg = $("previewImg");
+  const previewPlaceholder = $("previewPlaceholder");
+
+  const clientStatus = $("clientStatus");
+  const healthPill = $("healthPill");
+
+  const overallScore = $("overallScore");
+  const resultSubtitle = $("resultSubtitle");
+  const faceFound = $("faceFound");
+  const faceConf = $("faceConf");
+  const knownMatch = $("knownMatch");
+  const matchLabel = $("matchLabel");
+
+  const subscoresBox = $("subscoresBox");
+  const subscoresTbody = $("subscoresTbody");
+
+  const easterEggBox = $("easterEggBox");
+  const errorBox = $("errorBox");
+
+  let selectedFile = null;
+
+  function setClientStatus(msg, kind="normal") {
+    clientStatus.classList.toggle("err", kind === "err");
+    clientStatus.textContent = msg;
+  }
+
+  function setHealth(ok, text) {
+    const dot = ok ? "okdot" : "baddot";
+    healthPill.innerHTML = `<span class="${dot}"></span><span>Health: ${text}</span>`;
+  }
+
+  function resetResultUI() {
+    overallScore.textContent = "—";
+    resultSubtitle.textContent = "Upload an image to see scores.";
+    faceFound.textContent = "—";
+    faceConf.textContent = "—";
+    knownMatch.textContent = "—";
+    matchLabel.textContent = "—";
+
+    subscoresTbody.innerHTML = "";
+    subscoresBox.style.display = "none";
+
+    easterEggBox.style.display = "none";
+    easterEggBox.classList.remove("alert");
+    easterEggBox.textContent = "";
+
+    errorBox.style.display = "none";
+    errorBox.textContent = "";
+  }
+
+  function showError(msg) {
+    errorBox.style.display = "block";
+    errorBox.textContent = msg;
+  }
+
+  function setSelectedFile(file) {
+    selectedFile = file || null;
+    analyzeBtn.disabled = !selectedFile;
+    clearBtn.disabled = !selectedFile;
+
+    resetResultUI();
+
+    if (!selectedFile) {
+      previewImg.style.display = "none";
+      previewPlaceholder.style.display = "block";
+      previewPlaceholder.textContent = "No image selected.";
+      setClientStatus("Ready.");
+      return;
+    }
+
+    const url = URL.createObjectURL(selectedFile);
+    previewImg.src = url;
+    previewImg.onload = () => URL.revokeObjectURL(url);
+    previewImg.style.display = "block";
+    previewPlaceholder.style.display = "none";
+    setClientStatus(`Selected: ${selectedFile.name} (${Math.round(selectedFile.size/1024)} KB)`);
+  }
+
+  async function checkHealth() {
+    setClientStatus("Checking health...");
+    try {
+      const res = await fetch(HEALTH_URL, { method: "GET" });
+      if (!res.ok) throw new Error(`Health failed: HTTP ${res.status}`);
+      const data = await res.json();
+      setHealth(true, `ok (gallery_count=${data.gallery_count ?? "?"})`);
+      setClientStatus("Health OK.");
+    } catch (e) {
+      setHealth(false, "down / blocked by CORS / wrong URL");
+      setClientStatus(String(e), "err");
+    }
+  }
+
+  function renderResult(data) {
+    // Core
+    const overall = (typeof data.overall === "number") ? data.overall : null;
+    overallScore.textContent = (overall !== null) ? String(overall.toFixed(2)).replace(/\.00$/, "") : "—";
+    resultSubtitle.textContent = "Response received.";
+
+    faceFound.textContent = data.face_found ? "Yes" : "No";
+    faceConf.textContent = (typeof data.face_confidence === "number") ? data.face_confidence.toFixed(4) : "—";
+
+    knownMatch.textContent = data.known_match ? "Yes" : "No";
+    matchLabel.textContent = data.match_label ?? "—";
+
+    // Easter egg
+    if (data.status_text) {
+      easterEggBox.style.display = "block";
+      easterEggBox.classList.add("alert");
+      easterEggBox.textContent = data.status_text;
+    }
+
+    // Subscores
+    const subs = data.subscores || {};
+    const keys = Object.keys(subs);
+    if (keys.length) {
+      keys.sort((a,b) => a.localeCompare(b));
+      subscoresTbody.innerHTML = keys.map(k => {
+        const v = subs[k];
+        const n = (typeof v === "number") ? v : Number(v);
+        const show = Number.isFinite(n) ? n.toFixed(2).replace(/\.00$/, "") : String(v);
+        return `<tr><td>${k}</td><td class="right">${show}</td></tr>`;
+      }).join("");
+      subscoresBox.style.display = "block";
+    }
+  }
+
+  async function analyze() {
+    if (!selectedFile) return;
+
+    setClientStatus("Uploading & analyzing...");
+    showError(""); errorBox.style.display = "none";
+    resetResultUI(); // clears display, but we keep file/preview
+
+    analyzeBtn.disabled = true;
+
+    try {
+      const fd = new FormData();
+      fd.append("image", selectedFile, selectedFile.name);
+
+      const res = await fetch(ANALYZE_URL, { method: "POST", body: fd });
+      const text = await res.text();
+
+      if (!res.ok) {
+        // Try parse JSON error detail
+        let msg = `Analyze failed: HTTP ${res.status}`;
+        try {
+          const j = JSON.parse(text);
+          if (j && j.detail) msg += ` — ${j.detail}`;
+        } catch {}
+        throw new Error(msg);
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error("Analyze failed: response was not valid JSON.");
+      }
+
+      renderResult(data);
+      setClientStatus("Done.");
+    } catch (e) {
+      showError(String(e));
+      setClientStatus("Request failed.", "err");
+    } finally {
+      analyzeBtn.disabled = !selectedFile;
+    }
+  }
+
+  // File input
+  fileInput.addEventListener("change", (ev) => {
+    const file = ev.target.files && ev.target.files[0];
+    setSelectedFile(file);
+  });
+
+  // Drag & drop
+  ["dragenter","dragover"].forEach(evt =>
+    dropZone.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropZone.classList.add("drag");
+    })
+  );
+  ["dragleave","drop"].forEach(evt =>
+    dropZone.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropZone.classList.remove("drag");
+    })
+  );
+  dropZone.addEventListener("drop", (e) => {
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) setSelectedFile(file);
+  });
+
+  // Buttons
+  analyzeBtn.addEventListener("click", analyze);
+  clearBtn.addEventListener("click", () => {
+    fileInput.value = "";
+    setSelectedFile(null);
+  });
+  healthBtn.addEventListener("click", checkHealth);
+
+  // Auto health check on load
+  checkHealth();
+})();
+</script>
 </body>
 </html>
