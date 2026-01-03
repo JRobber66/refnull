@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+body { @apply bg-slate-950 text-slate-100; }
+
+.glow {
+  background: radial-gradient(600px circle at 20% 10%, rgba(99,102,241,.35), transparent 40%),
+              radial-gradient(700px circle at 90% 30%, rgba(16,185,129,.25), transparent 45%),
+              radial-gradient(800px circle at 40% 90%, rgba(244,63,94,.18), transparent 45%);
+}
