@@ -1,12 +1,130 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Face Metrics</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <title>Face Rater</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 2rem;
+    }
+    .card {
+      max-width: 600px;
+      margin: auto;
+      background: #020617;
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+    input, button {
+      margin-top: 1rem;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:disabled {
+      opacity: 0.5;
+    }
+    img {
+      max-width: 100%;
+      border-radius: 12px;
+      margin-top: 1rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .metric {
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 0.5rem;
+      text-align: center;
+    }
+    .big {
+      font-size: 3rem;
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Face Rater</h1>
+  <p>Upload a photo. Get a number.</p>
+
+  <input type="file" id="file" accept="image/*" />
+  <button id="run">Rate</button>
+
+  <img id="preview" hidden />
+
+  <div id="result" hidden>
+    <div class="big" id="overall"></div>
+    <div class="grid" id="subs"></div>
+  </div>
+</div>
+
+<script>
+const API = "https://web-production-64f21.up.railway.app/api/analyze";
+
+const fileInput = document.getElementById("file");
+const runBtn = document.getElementById("run");
+const preview = document.getElementById("preview");
+const result = document.getElementById("result");
+const overall = document.getElementById("overall");
+const subs = document.getElementById("subs");
+
+let file = null;
+
+fileInput.onchange = () => {
+  file = fileInput.files[0];
+  result.hidden = true;
+  if (file) {
+    preview.src = URL.createObjectURL(file);
+    preview.hidden = false;
+  }
+};
+
+runBtn.onclick = async () => {
+  if (!file) return;
+
+  runBtn.disabled = true;
+  runBtn.textContent = "Analyzing…";
+
+  const fd = new FormData();
+  fd.append("file", file);
+
+  try {
+    const res = await fetch(API, { method: "POST", body: fd });
+    const data = await res.json();
+
+    overall.textContent = data.overall_rating;
+    subs.innerHTML = "";
+
+    for (const [k, v] of Object.entries(data.subratings)) {
+      const div = document.createElement("div");
+      div.className = "metric";
+      div.innerHTML = `<strong>${v}</strong><br><small>${k.replace(/_/g, " ")}</small>`;
+      subs.appendChild(div);
+    }
+
+    result.hidden = false;
+  } catch (e) {
+    alert("Failed to analyze image.");
+  } finally {
+    runBtn.disabled = false;
+    runBtn.textContent = "Rate";
+  }
+};
+</script>
+
+</body>
 </html>
