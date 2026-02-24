@@ -1,130 +1,537 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Face Rater</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>P2P File Share (Serverless WebRTC)</title>
   <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #0f172a;
-      color: #e5e7eb;
-      padding: 2rem;
+    :root { color-scheme: dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background:#0b0f14; color:#e8eef7; }
+    .wrap { max-width: 980px; margin: 24px auto; padding: 0 16px; }
+    h1 { font-size: 18px; margin: 0 0 10px; font-weight: 650; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .card { background:#101823; border:1px solid #1f2a3a; border-radius: 14px; padding: 12px; }
+    label { display:block; font-size: 12px; opacity: .85; margin: 8px 0 6px; }
+    textarea { width:100%; min-height: 140px; resize: vertical; padding: 10px; border-radius: 10px;
+      border:1px solid #243247; background:#0c121b; color:#e8eef7; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+    button { cursor:pointer; border:1px solid #2a3a54; background:#132033; color:#e8eef7; border-radius: 12px; padding: 10px 12px; font-weight: 600; }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .pill { font-size: 12px; padding: 6px 10px; border-radius: 999px; border:1px solid #25344c; background:#0c121b; opacity:.9; }
+    .drop {
+      margin-top: 10px; border:1px dashed #2b3b56; border-radius: 14px; padding: 16px;
+      text-align:center; background:#0c121b;
     }
-    .card {
-      max-width: 600px;
-      margin: auto;
-      background: #020617;
-      border-radius: 16px;
-      padding: 1.5rem;
-    }
-    input, button {
-      margin-top: 1rem;
-    }
-    button {
-      padding: 0.6rem 1.2rem;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    button:disabled {
-      opacity: 0.5;
-    }
-    img {
-      max-width: 100%;
-      border-radius: 12px;
-      margin-top: 1rem;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 0.75rem;
-      margin-top: 1rem;
-    }
-    .metric {
-      background: #020617;
-      border: 1px solid #1e293b;
-      border-radius: 10px;
-      padding: 0.5rem;
-      text-align: center;
-    }
-    .big {
-      font-size: 3rem;
-      font-weight: 800;
-    }
+    .drop.drag { border-color:#6aa6ff; background:#0e1726; }
+    progress { width: 100%; height: 14px; }
+    .log { white-space: pre-wrap; font-size: 12px; opacity:.9; line-height: 1.35; }
+    .muted { opacity:.75; font-size: 12px; }
+    .full { grid-column: 1 / -1; }
+    .kv { display:grid; grid-template-columns: 120px 1fr; gap:6px 10px; font-size: 12px; }
+    .kv div:nth-child(odd){ opacity:.75; }
+    @media (max-width: 860px){ .grid{ grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
+  <div class="wrap">
+    <h1>P2P File Share (Serverless WebRTC)</h1>
+    <div class="muted">
+      No server. Direct transfer via WebRTC DataChannel. Connection requires manual copy/paste signaling.
+    </div>
 
-<div class="card">
-  <h1>Face Rater</h1>
-  <p>Upload a photo. Get a number.</p>
+    <div class="grid" style="margin-top:12px">
+      <div class="card">
+        <div class="row">
+          <button id="btnCreateOffer">Create Offer (Sender or Receiver)</button>
+          <button id="btnCopyLocal" disabled>Copy My Blob</button>
+          <span class="pill" id="status">Idle</span>
+        </div>
 
-  <input type="file" id="file" accept="image/*" />
-  <button id="run">Rate</button>
+        <label>My Blob (send this to the other computer)</label>
+        <textarea id="localBlob" placeholder="Click “Create Offer” (or “Paste Remote Blob”) and your blob will appear here."></textarea>
 
-  <img id="preview" hidden />
+        <label>Remote Blob (paste from the other computer)</label>
+        <textarea id="remoteBlob" placeholder="Paste the other computer’s blob here."></textarea>
 
-  <div id="result" hidden>
-    <div class="big" id="overall"></div>
-    <div class="grid" id="subs"></div>
+        <div class="row" style="margin-top:10px">
+          <button id="btnApplyRemote" disabled>Paste Remote Blob</button>
+          <button id="btnReset">Reset</button>
+        </div>
+
+        <div style="margin-top:10px" class="kv">
+          <div>Role</div><div id="role">—</div>
+          <div>ICE</div><div id="ice">—</div>
+          <div>DataChannel</div><div id="dc">—</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <input id="filePicker" type="file" multiple style="display:none" />
+          <button id="btnPickFile" disabled>Select File(s)</button>
+          <button id="btnSend" disabled>Send Selected</button>
+        </div>
+
+        <div id="drop" class="drop">
+          <div><strong>Drop files here</strong></div>
+          <div class="muted">or click “Select File(s)”</div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Transfer Progress</label>
+          <progress id="prog" value="0" max="1"></progress>
+          <div class="row" style="margin-top:8px">
+            <span class="pill" id="txInfo">TX: —</span>
+            <span class="pill" id="rxInfo">RX: —</span>
+          </div>
+        </div>
+
+        <div class="full" style="margin-top:10px">
+          <label>Log</label>
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+
+      <div class="card full">
+        <div class="muted">
+          <strong>How to use:</strong>
+          <ol>
+            <li>On Computer A: click <b>Create Offer</b>, then copy “My Blob” and send it to Computer B.</li>
+            <li>On Computer B: paste into “Remote Blob”, click <b>Paste Remote Blob</b>. B will generate its own “My Blob” (the Answer). Copy it back to A.</li>
+            <li>On Computer A: paste B’s blob into “Remote Blob”, click <b>Paste Remote Blob</b>. Connection should go <b>Connected</b>.</li>
+            <li>Now either side can select/drop files and click <b>Send Selected</b>.</li>
+          </ol>
+          Notes: NAT/firewall conditions can prevent direct connectivity. Works best when both peers can establish a path (often fine on normal home networks).
+        </div>
+      </div>
+    </div>
   </div>
-</div>
 
 <script>
-const API = "https://web-production-64f21.up.railway.app/api/analyze";
+(() => {
+  // ====== UI ======
+  const $ = (id) => document.getElementById(id);
+  const btnCreateOffer = $("btnCreateOffer");
+  const btnCopyLocal = $("btnCopyLocal");
+  const btnApplyRemote = $("btnApplyRemote");
+  const btnReset = $("btnReset");
+  const localBlob = $("localBlob");
+  const remoteBlob = $("remoteBlob");
+  const statusEl = $("status");
+  const roleEl = $("role");
+  const iceEl = $("ice");
+  const dcEl = $("dc");
+  const btnPickFile = $("btnPickFile");
+  const btnSend = $("btnSend");
+  const filePicker = $("filePicker");
+  const drop = $("drop");
+  const prog = $("prog");
+  const txInfo = $("txInfo");
+  const rxInfo = $("rxInfo");
+  const logEl = $("log");
 
-const fileInput = document.getElementById("file");
-const runBtn = document.getElementById("run");
-const preview = document.getElementById("preview");
-const result = document.getElementById("result");
-const overall = document.getElementById("overall");
-const subs = document.getElementById("subs");
-
-let file = null;
-
-fileInput.onchange = () => {
-  file = fileInput.files[0];
-  result.hidden = true;
-  if (file) {
-    preview.src = URL.createObjectURL(file);
-    preview.hidden = false;
+  function log(msg) {
+    const t = new Date().toLocaleTimeString();
+    logEl.textContent = `[${t}] ${msg}\n` + logEl.textContent;
   }
-};
+  function setStatus(s) { statusEl.textContent = s; }
+  function setRole(s) { roleEl.textContent = s; }
+  function setICE(s) { iceEl.textContent = s; }
+  function setDC(s) { dcEl.textContent = s; }
 
-runBtn.onclick = async () => {
-  if (!file) return;
+  // ====== WebRTC ======
+  // STUN is not "your server", it's a public helper for NAT discovery.
+  // You can remove it to be ultra-purist, but connectivity will drop a lot.
+  const rtcConfig = {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:global.stun.twilio.com:3478" }
+    ]
+  };
 
-  runBtn.disabled = true;
-  runBtn.textContent = "Analyzing…";
+  let pc = null;
+  let dc = null;
+  let makingOffer = false;
+  let pendingLocal = null;     // { desc, candidates[] }
+  let selectedFiles = [];
 
-  const fd = new FormData();
-  fd.append("file", file);
+  // Receive assembly state
+  let rx = {
+    active: false,
+    meta: null,            // {name,size,type,lastModified}
+    chunks: [],            // ArrayBuffer[]
+    receivedBytes: 0,
+    expectedBytes: 0
+  };
 
-  try {
-    const res = await fetch(API, { method: "POST", body: fd });
-    const data = await res.json();
+  // Transfer settings
+  const CHUNK_SIZE = 256 * 1024; // 256KB
+  const BUFFER_LIMIT = 8 * 1024 * 1024; // pause when bufferedAmount > 8MB
+  const BUFFER_LOW = 2 * 1024 * 1024; // resume when < 2MB
 
-    overall.textContent = data.overall_rating;
-    subs.innerHTML = "";
+  function ensurePeer() {
+    if (pc) return;
+    pc = new RTCPeerConnection(rtcConfig);
 
-    for (const [k, v] of Object.entries(data.subratings)) {
-      const div = document.createElement("div");
-      div.className = "metric";
-      div.innerHTML = `<strong>${v}</strong><br><small>${k.replace(/_/g, " ")}</small>`;
-      subs.appendChild(div);
+    pc.onicegatheringstatechange = () => setICE(pc.iceGatheringState);
+    pc.onconnectionstatechange = () => {
+      setStatus(pc.connectionState);
+      if (pc.connectionState === "connected") {
+        btnPickFile.disabled = false;
+        btnSend.disabled = selectedFiles.length === 0;
+        log("Peer connection connected.");
+      }
+      if (pc.connectionState === "failed") {
+        log("Connection failed (NAT/firewall). Try again or different network.");
+      }
+    };
+
+    pc.onicecandidate = (ev) => {
+      if (ev.candidate) {
+        pendingLocal.candidates.push(ev.candidate);
+      } else {
+        // ICE gathering complete
+        localBlob.value = JSON.stringify(pendingLocal, null, 2);
+        btnCopyLocal.disabled = false;
+        log("ICE gathering complete. Blob ready to share.");
+      }
+    };
+
+    pc.ondatachannel = (ev) => {
+      log("DataChannel received.");
+      setupDataChannel(ev.channel);
+    };
+  }
+
+  function setupDataChannel(channel) {
+    dc = channel;
+    dc.binaryType = "arraybuffer";
+    setDC(dc.readyState);
+
+    dc.onopen = () => {
+      setDC(dc.readyState);
+      log("DataChannel open.");
+      btnPickFile.disabled = false;
+      btnSend.disabled = selectedFiles.length === 0;
+    };
+    dc.onclose = () => { setDC(dc.readyState); log("DataChannel closed."); };
+    dc.onerror = (e) => { log("DataChannel error: " + (e?.message || e)); };
+
+    dc.onmessage = async (ev) => {
+      if (typeof ev.data === "string") {
+        // control message
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+
+        if (msg.type === "meta") {
+          rx.active = true;
+          rx.meta = msg.file;
+          rx.chunks = [];
+          rx.receivedBytes = 0;
+          rx.expectedBytes = msg.file.size;
+
+          prog.value = 0;
+          prog.max = rx.expectedBytes || 1;
+          rxInfo.textContent = `RX: ${rx.meta.name} (0 / ${formatBytes(rx.expectedBytes)})`;
+          log(`Receiving: ${rx.meta.name} (${formatBytes(rx.expectedBytes)})`);
+          // ack
+          dc.send(JSON.stringify({ type: "meta-ack" }));
+          return;
+        }
+
+        if (msg.type === "done") {
+          await finalizeReceivedFile();
+          return;
+        }
+
+        if (msg.type === "meta-ack") {
+          // sender got ack, no-op (we pace separately)
+          return;
+        }
+
+        if (msg.type === "ping") {
+          dc.send(JSON.stringify({ type: "pong" }));
+          return;
+        }
+        return;
+      }
+
+      // binary chunk
+      if (!rx.active) return;
+      const buf = ev.data;
+      rx.chunks.push(buf);
+      rx.receivedBytes += buf.byteLength;
+
+      prog.value = rx.receivedBytes;
+      rxInfo.textContent = `RX: ${rx.meta.name} (${formatBytes(rx.receivedBytes)} / ${formatBytes(rx.expectedBytes)})`;
+
+      // optional: send lightweight progress hints (not required)
+    };
+  }
+
+  async function finalizeReceivedFile() {
+    if (!rx.active) return;
+    rx.active = false;
+
+    const blob = new Blob(rx.chunks, { type: rx.meta.type || "application/octet-stream" });
+    rx.chunks = [];
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = rx.meta.name || "received.bin";
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 2000);
+
+    log(`Received complete: ${a.download} (${formatBytes(blob.size)})`);
+    rxInfo.textContent = `RX: complete (${a.download})`;
+  }
+
+  // ====== Signaling blobs ======
+  async function createOffer() {
+    ensurePeer();
+    setRole("Offerer");
+    setStatus("creating-offer");
+    makingOffer = true;
+
+    // create datachannel on offerer side
+    const channel = pc.createDataChannel("file", { ordered: true });
+    setupDataChannel(channel);
+
+    pendingLocal = { desc: null, candidates: [] };
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    pendingLocal.desc = pc.localDescription;
+    setICE(pc.iceGatheringState);
+    log("Offer created. Gathering ICE candidates...");
+  }
+
+  async function applyRemoteBlob() {
+    ensurePeer();
+    let remote;
+    try {
+      remote = JSON.parse(remoteBlob.value);
+    } catch {
+      log("Remote blob is not valid JSON.");
+      return;
+    }
+    if (!remote?.desc) {
+      log("Remote blob missing 'desc'.");
+      return;
     }
 
-    result.hidden = false;
-  } catch (e) {
-    alert("Failed to analyze image.");
-  } finally {
-    runBtn.disabled = false;
-    runBtn.textContent = "Rate";
-  }
-};
-</script>
+    await pc.setRemoteDescription(remote.desc);
+    log(`Remote description set (${remote.desc.type}).`);
 
+    // Add remote candidates (if any)
+    if (Array.isArray(remote.candidates)) {
+      for (const c of remote.candidates) {
+        try { await pc.addIceCandidate(c); } catch (e) { /* ignore */ }
+      }
+      log(`Applied ${remote.candidates.length} remote ICE candidate(s).`);
+    }
+
+    // If we received an offer, we must answer
+    if (remote.desc.type === "offer") {
+      setRole("Answerer");
+      setStatus("creating-answer");
+      pendingLocal = { desc: null, candidates: [] };
+
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      pendingLocal.desc = pc.localDescription;
+
+      setICE(pc.iceGatheringState);
+      log("Answer created. Gathering ICE candidates...");
+      // when ICE completes, our local blob will populate via onicecandidate(null)
+    }
+
+    // If we received an answer, we should become connected soon
+    if (remote.desc.type === "answer") {
+      setRole("Offerer");
+      setStatus("answer-applied");
+      log("Answer applied. Waiting for connection...");
+    }
+  }
+
+  function resetAll() {
+    try { dc?.close(); } catch {}
+    try { pc?.close(); } catch {}
+    pc = null; dc = null;
+    makingOffer = false;
+    pendingLocal = null;
+    selectedFiles = [];
+    filePicker.value = "";
+    localBlob.value = "";
+    remoteBlob.value = "";
+    prog.value = 0; prog.max = 1;
+    txInfo.textContent = "TX: —";
+    rxInfo.textContent = "RX: —";
+    setRole("—"); setICE("—"); setDC("—"); setStatus("Idle");
+    btnCopyLocal.disabled = true;
+    btnApplyRemote.disabled = remoteBlob.value.trim().length === 0;
+    btnPickFile.disabled = true;
+    btnSend.disabled = true;
+    log("Reset.");
+  }
+
+  // ====== Sending ======
+  async function sendFiles(files) {
+    if (!dc || dc.readyState !== "open") {
+      log("DataChannel not open.");
+      return;
+    }
+    for (const file of files) {
+      await sendOneFile(file);
+    }
+  }
+
+  async function sendOneFile(file) {
+    log(`Sending: ${file.name} (${formatBytes(file.size)})`);
+    txInfo.textContent = `TX: ${file.name} (0 / ${formatBytes(file.size)})`;
+    prog.value = 0;
+    prog.max = file.size || 1;
+
+    // Send metadata first
+    dc.send(JSON.stringify({
+      type: "meta",
+      file: {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified
+      }
+    }));
+
+    // Stream chunks
+    let offset = 0;
+    while (offset < file.size) {
+      // Backpressure: wait if bufferedAmount is high
+      if (dc.bufferedAmount > BUFFER_LIMIT) {
+        await waitForBufferedLow();
+      }
+
+      const slice = file.slice(offset, offset + CHUNK_SIZE);
+      const buf = await slice.arrayBuffer();
+      dc.send(buf);
+
+      offset += buf.byteLength;
+      prog.value = offset;
+      txInfo.textContent = `TX: ${file.name} (${formatBytes(offset)} / ${formatBytes(file.size)})`;
+    }
+
+    // Finish file
+    dc.send(JSON.stringify({ type: "done" }));
+    log(`Sent complete: ${file.name}`);
+    txInfo.textContent = `TX: complete (${file.name})`;
+  }
+
+  function waitForBufferedLow() {
+    return new Promise((resolve) => {
+      const check = () => {
+        if (!dc) return resolve();
+        if (dc.bufferedAmount <= BUFFER_LOW) return resolve();
+        setTimeout(check, 30);
+      };
+      check();
+    });
+  }
+
+  function formatBytes(n) {
+    if (!Number.isFinite(n)) return "—";
+    const units = ["B","KB","MB","GB","TB"];
+    let i = 0;
+    let x = n;
+    while (x >= 1024 && i < units.length-1) { x /= 1024; i++; }
+    return `${x.toFixed(x < 10 && i>0 ? 2 : x < 100 && i>0 ? 1 : 0)} ${units[i]}`;
+  }
+
+  // ====== UI wiring ======
+  btnCreateOffer.addEventListener("click", async () => {
+    try {
+      btnCreateOffer.disabled = true;
+      await createOffer();
+    } catch (e) {
+      log("Create offer error: " + (e?.message || e));
+      btnCreateOffer.disabled = false;
+    }
+  });
+
+  btnApplyRemote.addEventListener("click", async () => {
+    try {
+      btnApplyRemote.disabled = true;
+      await applyRemoteBlob();
+    } catch (e) {
+      log("Apply remote error: " + (e?.message || e));
+    } finally {
+      btnApplyRemote.disabled = remoteBlob.value.trim().length === 0;
+    }
+  });
+
+  remoteBlob.addEventListener("input", () => {
+    btnApplyRemote.disabled = remoteBlob.value.trim().length === 0;
+  });
+
+  btnCopyLocal.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(localBlob.value);
+      log("Copied local blob to clipboard.");
+    } catch {
+      log("Clipboard write failed. Manually copy the text.");
+    }
+  });
+
+  btnReset.addEventListener("click", () => {
+    btnCreateOffer.disabled = false;
+    resetAll();
+  });
+
+  btnPickFile.addEventListener("click", () => filePicker.click());
+  filePicker.addEventListener("change", () => {
+    selectedFiles = Array.from(filePicker.files || []);
+    btnSend.disabled = !(selectedFiles.length && dc && dc.readyState === "open");
+    if (selectedFiles.length) log(`Selected ${selectedFiles.length} file(s).`);
+  });
+
+  btnSend.addEventListener("click", async () => {
+    if (!selectedFiles.length) return;
+    btnSend.disabled = true;
+    try {
+      await sendFiles(selectedFiles);
+    } catch (e) {
+      log("Send error: " + (e?.message || e));
+    } finally {
+      btnSend.disabled = !(selectedFiles.length && dc && dc.readyState === "open");
+    }
+  });
+
+  // Drag & drop
+  ["dragenter","dragover"].forEach(evt => drop.addEventListener(evt, (e) => {
+    e.preventDefault(); e.stopPropagation();
+    drop.classList.add("drag");
+  }));
+  ["dragleave","drop"].forEach(evt => drop.addEventListener(evt, (e) => {
+    e.preventDefault(); e.stopPropagation();
+    drop.classList.remove("drag");
+  }));
+  drop.addEventListener("drop", (e) => {
+    const files = Array.from(e.dataTransfer.files || []);
+    if (!files.length) return;
+    selectedFiles = files;
+    btnSend.disabled = !(selectedFiles.length && dc && dc.readyState === "open");
+    log(`Dropped ${selectedFiles.length} file(s).`);
+  });
+
+  // Initial state
+  resetAll();
+  log("Open this file on both computers. Use Create Offer on one side.");
+})();
+</script>
 </body>
 </html>
